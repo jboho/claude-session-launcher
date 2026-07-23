@@ -32,4 +32,10 @@ describe("settings", () => {
     await saveSettings(s, f);
     expect(await loadSettings(f)).toEqual(s);
   });
+
+  test("invalid JSON throws (not swallowed to defaults)", async () => {
+    const f = await tmpFile();
+    await fs.writeFile(f, "{ not json", "utf8");
+    await expect(loadSettings(f)).rejects.toThrow();
+  });
 });
