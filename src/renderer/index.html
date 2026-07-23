@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Claude Launcher</title>
+  <link rel="stylesheet" href="./panel.css" />
+</head>
+<body>
+  <div class="win">
+    <div class="titlebar">
+      <span class="name">⚡ Claude Launcher</span>
+      <button class="gear" id="open-settings">⚙</button>
+    </div>
+    <div class="compose">
+      <div class="group"><span class="glabel">Model</span><div class="row" id="g-model"></div></div>
+      <div class="group"><span class="glabel">Mode</span><div class="row" id="g-mode"></div></div>
+      <div class="group"><span class="glabel">Effort</span><div class="row" id="g-effort"></div></div>
+    </div>
+    <div class="preview"><span class="caret">▸</span><span id="preview"></span></div>
+    <div class="actions">
+      <button class="act launch" id="launch">Launch ⏎</button>
+      <button class="act save" id="save">★ Save</button>
+    </div>
+    <div class="lane-label">Presets — click to launch</div>
+    <div class="presets" id="presets"></div>
+  </div>
+
+  <div class="backdrop" id="backdrop">
+    <div class="sheet">
+      <h2>Settings</h2>
+      <p class="sub">Global defaults for quick launches. Presets keep their own dir + command.</p>
+      <div class="sfld"><label>Terminal</label><div class="seg" id="seg-terminal"></div></div>
+      <div class="sfld"><label>Default working directory</label><input id="s-wd" type="text" placeholder="/absolute/path — blank = current" /></div>
+      <div class="sfld"><label>Default initial command / prompt</label><input id="s-cmd" type="text" placeholder="e.g. /pr-queue — blank = none" /></div>
+      <div class="close"><button id="close-settings">Done</button></div>
+    </div>
+  </div>
+  <div id="toast"></div>
+
+  <script type="module" src="./panel.js"></script>
+</body>
+</html>
