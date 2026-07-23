@@ -15,6 +15,18 @@ export const MODES: Option[] = [
   { value: "acceptEdits", label: "Accept" },
 ];
 
+/** No mode selected = manual approval (ask for everything). */
+export const DEFAULT_MODE = "manual";
+
+/** Haiku (4.5) does not support the --effort flag (it errors). */
+export function isHaiku(model: string): boolean {
+  const m = model.trim().toLowerCase();
+  return m === "haiku" || m.startsWith("claude-haiku");
+}
+
+/** Autonomous permission modes are gated to capable models — Haiku rejects them. */
+export const HAIKU_BLOCKED_MODES = ["auto"];
+
 export const EFFORTS: Option[] = [
   { value: "low", label: "Low" },
   { value: "medium", label: "Med" },
