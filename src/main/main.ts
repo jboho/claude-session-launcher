@@ -2,6 +2,7 @@ import { app, BrowserWindow, Menu, Tray, nativeImage, screen, globalShortcut } f
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { registerIpc } from "./ipc.js";
+import { ensureSeedPresets } from "./seed.js";
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -72,7 +73,8 @@ function togglePanel(): void {
   positionAndShow();
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  await ensureSeedPresets();
   // Dock icon kept visible on purpose: on machines where the menu-bar tray icon
   // is hidden (notch / menu-bar managers), the Dock icon is a reliable way to
   // reopen the panel.

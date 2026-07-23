@@ -60,3 +60,12 @@ export const DEFAULT_SETTINGS: Settings = { terminal: "iTerm", wd: "", cmd: "" }
 export function emptyPreset(): Preset {
   return { id: "", name: "", model: "", mode: "", effort: "", wd: "", cmd: "" };
 }
+
+/** Seeded on first run (when no presets file exists). ids are assigned at seed time. */
+export const STARTER_PRESETS: Preset[] = [
+  { id: "", name: "Plan", model: "opus", mode: "plan", effort: "", wd: "", cmd: "" },
+  { id: "", name: "Build", model: "opus", mode: "acceptEdits", effort: "high", wd: "", cmd: "" },
+  { id: "", name: "Autopilot", model: "opus", mode: "auto", effort: "high", wd: "", cmd: "" },
+  { id: "", name: "Quick", model: "haiku", mode: "", effort: "", wd: "", cmd: "" },
+  { id: "", name: "Explore", model: "sonnet", mode: "plan", effort: "", wd: "", cmd: "" },
+];
