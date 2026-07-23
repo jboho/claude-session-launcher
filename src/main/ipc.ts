@@ -15,8 +15,8 @@ export function registerIpc(): void {
     return s;
   });
   ipcMain.handle("launch", async (_e, spec: LaunchSpec) => {
-    const settings = await loadSettings();
     try {
+      const settings = await loadSettings();
       await launchSpec(spec, settings);
     } catch (err) {
       dialog.showErrorBox("Launch failed", err instanceof Error ? err.message : String(err));

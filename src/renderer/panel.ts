@@ -21,9 +21,10 @@ const TERMINALS = ["iTerm", "Terminal"];
 let presets: Preset[] = [];
 let settings: Settings = { terminal: "iTerm", wd: "", cmd: "" };
 const sel = { model: "opus", mode: "auto", effort: "high" };
+const composer = { wd: "", cmd: "" };
 
 const $ = (id: string): HTMLElement => document.getElementById(id)!;
-const composed = (): LaunchSpec => ({ ...sel, wd: settings.wd, cmd: settings.cmd });
+const composed = (): LaunchSpec => ({ ...sel, wd: composer.wd, cmd: composer.cmd });
 
 function sqBtn(label: string, on: boolean, onclick: () => void): HTMLButtonElement {
   const b = document.createElement("button");
@@ -78,9 +79,8 @@ function presetEl(p: Preset, plain: boolean): HTMLElement {
       sel.model = p.model;
       sel.mode = p.mode;
       sel.effort = p.effort;
-      settings.wd = p.wd;
-      settings.cmd = p.cmd;
-      syncSettingsInputs();
+      composer.wd = p.wd;
+      composer.cmd = p.cmd;
       renderDials();
       renderPreview();
       toast(`Loaded ${p.name}`);
@@ -137,7 +137,7 @@ async function launch(spec: LaunchSpec, name: string): Promise<void> {
 async function savePreset(): Promise<void> {
   const name = window.prompt("Name this preset:", "");
   if (!name) return;
-  const preset: Preset = { ...emptyPreset(), name, ...sel, wd: settings.wd, cmd: settings.cmd };
+  const preset: Preset = { ...emptyPreset(), name, ...sel, wd: composer.wd, cmd: composer.cmd };
   const result = validatePreset(preset);
   if (!result.valid) {
     toast(result.errors.join(" "));
@@ -149,7 +149,15 @@ async function savePreset(): Promise<void> {
 }
 
 async function init(): Promise<void> {
-  [presets, settings] = await Promise.all([window.launcher.getPresets(), window.launcher.getSettings()]);
+  try {
+    [presets, settings] = await Promise.all([window.launcher.getPresets(), window.launcher.getSettings()]);
+  } catch {
+    presets = [];
+    settings = { terminal: "iTerm", wd: "", cmd: "" };
+    toast("Couldn't load saved config — check presets.json / settings.json");
+  }
+  composer.wd = settings.wd;
+  composer.cmd = settings.cmd;
 
   $("launch").onclick = () => void launch(composed(), "current");
   $("save").onclick = () => void savePreset();
@@ -169,11 +177,15 @@ async function init(): Promise<void> {
     }
   };
   ($("s-wd") as HTMLInputElement).oninput = () => {
-    settings.wd = ($("s-wd") as HTMLInputElement).value;
+    const v = ($("s-wd") as HTMLInputElement).value;
+    settings.wd = v;
+    composer.wd = v;
     renderPreview();
   };
   ($("s-cmd") as HTMLInputElement).oninput = () => {
-    settings.cmd = ($("s-cmd") as HTMLInputElement).value;
+    const v = ($("s-cmd") as HTMLInputElement).value;
+    settings.cmd = v;
+    composer.cmd = v;
     renderPreview();
   };
 
@@ -184,4 +196,6 @@ async function init(): Promise<void> {
   syncSettingsInputs();
 }
 
-window.addEventListener("DOMContentLoaded", () => void init());
+window.addEventListener("DOMContentLoaded", () => {
+  init().catch(() => toast("Initialization failed"));
+});
