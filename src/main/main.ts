@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, Tray, nativeImage, screen } from "electron";
+import { app, BrowserWindow, Menu, Tray, nativeImage, screen, globalShortcut } from "electron";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { registerIpc } from "./ipc.js";
@@ -8,11 +8,11 @@ const dirname = path.dirname(fileURLToPath(import.meta.url));
 // Identify as "Claude Launcher" (not the default unpackaged "app" label).
 app.setName("Claude Launcher");
 
-// Menu-bar icon: a lightning-bolt template PNG (black-on-transparent; macOS tints
-// it for light/dark). An empty nativeImage renders a zero-width, invisible status
-// item, so a real image is required for the tray to appear.
+// Menu-bar icon: a Claude-style sunburst template PNG (black-on-transparent; macOS
+// tints it for light/dark). An empty nativeImage renders a zero-width, invisible
+// status item, so a real image is required for the tray to appear.
 const TRAY_ICON_DATA_URL =
-  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAQAAAC1+jfqAAAAKElEQVR4nGNgoAX4T0garwIC0kTpx6PgPxokTZpEawg4Ey+gTJo8AAATByPdD0g2WwAAAABJRU5ErkJggg==";
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAQAAAD8x0bcAAAAMUlEQVR4nGNgoAX4j4dHmiJkCSxK/uPQhyH+HwdJmnXUBwStI+hwooOAKOuoG3eUAABrcR/h1B98RgAAAABJRU5ErkJggg==";
 
 let tray: Tray | null = null;
 let panel: BrowserWindow | null = null;
@@ -93,6 +93,17 @@ app.whenReady().then(() => {
   tray.on("click", () => togglePanel());
   tray.on("right-click", () => tray?.popUpContextMenu(menu));
 
+  // Global hotkey to summon the panel from anywhere. First that registers wins.
+  const HOTKEYS = ["Alt+W"]; // Option+W
+  let hotkey = "";
+  for (const hk of HOTKEYS) {
+    if (globalShortcut.register(hk, () => togglePanel())) {
+      hotkey = hk;
+      break;
+    }
+  }
+  console.log(`[launcher] global hotkey: ${hotkey || "NONE (all candidates were taken)"}`);
+
   // Show once on launch so the panel is immediately visible.
   positionAndShow();
 });
@@ -104,3 +115,6 @@ app.on("window-all-closed", () => {
 
 // Clicking the Dock icon reopens the panel.
 app.on("activate", () => positionAndShow());
+
+// Release the global hotkey on quit.
+app.on("will-quit", () => globalShortcut.unregisterAll());

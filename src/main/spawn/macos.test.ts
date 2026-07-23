@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { osaQuote, buildMacScript } from "./macos.js";
+import { osaQuote, buildMacScript, buildGhosttyArgs } from "./macos.js";
 
 describe("osaQuote", () => {
   test("wraps in double quotes", () => {
@@ -22,5 +22,19 @@ describe("buildMacScript", () => {
     const lines = buildMacScript("claude", "Terminal");
     expect(lines[0]).toBe('tell application "Terminal"');
     expect(lines).toContain('  do script "claude"');
+  });
+});
+
+describe("buildGhosttyArgs", () => {
+  test("wraps the launch string as a single zsh -lc arg", () => {
+    expect(buildGhosttyArgs("cd '~/Code' && claude")).toEqual([
+      "-na",
+      "Ghostty",
+      "--args",
+      "-e",
+      "/bin/zsh",
+      "-lc",
+      "cd '~/Code' && claude",
+    ]);
   });
 });
