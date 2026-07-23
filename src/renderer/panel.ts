@@ -134,16 +134,29 @@ async function launch(spec: LaunchSpec, name: string): Promise<void> {
   }
 }
 
-async function savePreset(): Promise<void> {
-  const name = window.prompt("Name this preset:", "");
-  if (!name) return;
+function openSaveRow(): void {
+  const input = $("save-name") as HTMLInputElement;
+  input.value = "";
+  $("save-row").classList.add("open");
+  input.focus();
+}
+
+function closeSaveRow(): void {
+  $("save-row").classList.remove("open");
+}
+
+async function confirmSave(): Promise<void> {
+  const input = $("save-name") as HTMLInputElement;
+  const name = input.value.trim();
   const preset: Preset = { ...emptyPreset(), name, ...sel, wd: composer.wd, cmd: composer.cmd };
   const result = validatePreset(preset);
   if (!result.valid) {
     toast(result.errors.join(" "));
+    input.focus();
     return;
   }
   presets = await window.launcher.upsertPreset(preset);
+  closeSaveRow();
   renderPresets();
   toast(`Saved ${name}`);
 }
@@ -160,7 +173,13 @@ async function init(): Promise<void> {
   composer.cmd = settings.cmd;
 
   $("launch").onclick = () => void launch(composed(), "current");
-  $("save").onclick = () => void savePreset();
+  $("save").onclick = () => openSaveRow();
+  $("save-confirm").onclick = () => void confirmSave();
+  $("save-cancel").onclick = () => closeSaveRow();
+  ($("save-name") as HTMLInputElement).onkeydown = (e) => {
+    if (e.key === "Enter") void confirmSave();
+    else if (e.key === "Escape") closeSaveRow();
+  };
   $("open-settings").onclick = () => {
     syncSettingsInputs();
     renderTerminalSeg();

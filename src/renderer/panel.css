@@ -59,6 +59,14 @@
   .preset .edit:hover { background:var(--border); color:var(--text); }
   .preset.plain .go .pname { color:var(--muted); font-style:italic; }
 
+  /* Inline "save preset" name row */
+  .save-row { display:none; gap:8px; margin-top:8px; }
+  .save-row.open { display:flex; }
+  .save-row input { flex:1; padding:0 10px; height:38px; border:1.5px solid var(--border); border-radius:9px;
+    background:var(--btn); color:var(--text); font:inherit; font-size:13px; }
+  .save-row input:focus { outline:none; border-color:var(--accent); }
+  .save-row .act { flex:0 0 auto; padding:0 14px; }
+
   /* Settings overlay */
   .backdrop { position:fixed; inset:0; background:rgba(0,0,0,.4); display:none; align-items:center; justify-content:center; }
   .backdrop.open { display:flex; }
