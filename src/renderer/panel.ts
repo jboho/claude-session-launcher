@@ -1,4 +1,15 @@
-import { MODELS, MODES, EFFORTS, emptyPreset, type LaunchSpec, type Preset, type Settings } from "../core/types.js";
+import {
+  MODELS,
+  MODES,
+  EFFORTS,
+  DEFAULT_MODE,
+  isHaiku,
+  HAIKU_BLOCKED_MODES,
+  emptyPreset,
+  type LaunchSpec,
+  type Preset,
+  type Settings,
+} from "../core/types.js";
 import { buildLaunchString } from "../core/launch-string.js";
 import { validatePreset } from "../core/validate.js";
 
@@ -16,25 +27,39 @@ declare global {
   }
 }
 
-const TERMINALS = ["iTerm", "Terminal"];
+const TERMINALS = ["iTerm", "Terminal", "Ghostty"];
 
 let presets: Preset[] = [];
 let settings: Settings = { terminal: "iTerm", wd: "", cmd: "" };
 const sel = { model: "opus", mode: "auto", effort: "high" };
+// Transient composer state (per-launch). wd seeds from the settings default; cmd
+// is entered inline before each launch (not persisted).
 const composer = { wd: "", cmd: "" };
 
 const $ = (id: string): HTMLElement => document.getElementById(id)!;
-const composed = (): LaunchSpec => ({ ...sel, wd: composer.wd, cmd: composer.cmd });
+// No mode selected => manual (ask for everything).
+const composed = (): LaunchSpec => ({
+  ...sel,
+  mode: sel.mode || DEFAULT_MODE,
+  wd: composer.wd,
+  cmd: composer.cmd,
+});
 
-function sqBtn(label: string, on: boolean, onclick: () => void): HTMLButtonElement {
+function sqBtn(label: string, on: boolean, onclick: () => void, disabled = false): HTMLButtonElement {
   const b = document.createElement("button");
-  b.className = "sq" + (on ? " on" : "");
+  b.className = "sq" + (on ? " on" : "") + (disabled ? " disabled" : "");
   b.textContent = label;
-  b.onclick = onclick;
+  if (!disabled) b.onclick = onclick;
   return b;
 }
 
 function renderDials(): void {
+  // Haiku can't do --effort, nor the autonomous modes (auto/bypass) — grey those out.
+  const haiku = isHaiku(sel.model);
+  if (haiku) {
+    sel.effort = "";
+    if (HAIKU_BLOCKED_MODES.includes(sel.mode)) sel.mode = "";
+  }
   const groups: [string, { value: string; label: string }[], "model" | "mode" | "effort"][] = [
     ["g-model", MODELS, "model"],
     ["g-mode", MODES, "mode"],
@@ -44,12 +69,19 @@ function renderDials(): void {
     const host = $(elId);
     host.innerHTML = "";
     for (const o of options) {
+      const disabled =
+        haiku && (key === "effort" || (key === "mode" && HAIKU_BLOCKED_MODES.includes(o.value)));
       host.appendChild(
-        sqBtn(o.label, sel[key] === o.value, () => {
-          sel[key] = sel[key] === o.value ? "" : o.value;
-          renderDials();
-          renderPreview();
-        }),
+        sqBtn(
+          o.label,
+          sel[key] === o.value,
+          () => {
+            sel[key] = sel[key] === o.value ? "" : o.value;
+            renderDials();
+            renderPreview();
+          },
+          disabled,
+        ),
       );
     }
   }
@@ -81,13 +113,30 @@ function presetEl(p: Preset, plain: boolean): HTMLElement {
       sel.effort = p.effort;
       composer.wd = p.wd;
       composer.cmd = p.cmd;
+      ($("cmd") as HTMLInputElement).value = p.cmd;
       renderDials();
       renderPreview();
       toast(`Loaded ${p.name}`);
     };
     el.appendChild(ed);
+
+    const del = document.createElement("button");
+    del.className = "del";
+    del.textContent = "✕";
+    del.title = "Delete preset";
+    del.onclick = (e) => {
+      e.stopPropagation();
+      void deletePreset(p);
+    };
+    el.appendChild(del);
   }
   return el;
+}
+
+async function deletePreset(p: Preset): Promise<void> {
+  presets = await window.launcher.removePreset(p.id);
+  renderPresets();
+  toast(`Deleted ${p.name}`);
 }
 
 function renderPresets(): void {
@@ -111,9 +160,9 @@ function renderTerminalSeg(): void {
   }
 }
 
-function syncSettingsInputs(): void {
+function syncInputs(): void {
   ($("s-wd") as HTMLInputElement).value = settings.wd;
-  ($("s-cmd") as HTMLInputElement).value = settings.cmd;
+  ($("cmd") as HTMLInputElement).value = composer.cmd;
 }
 
 let toastT: ReturnType<typeof setTimeout>;
@@ -170,7 +219,7 @@ async function init(): Promise<void> {
     toast("Couldn't load saved config — check presets.json / settings.json");
   }
   composer.wd = settings.wd;
-  composer.cmd = settings.cmd;
+  composer.cmd = "";
 
   $("launch").onclick = () => void launch(composed(), "current");
   $("save").onclick = () => openSaveRow();
@@ -180,8 +229,12 @@ async function init(): Promise<void> {
     if (e.key === "Enter") void confirmSave();
     else if (e.key === "Escape") closeSaveRow();
   };
+  ($("cmd") as HTMLInputElement).oninput = () => {
+    composer.cmd = ($("cmd") as HTMLInputElement).value;
+    renderPreview();
+  };
   $("open-settings").onclick = () => {
-    syncSettingsInputs();
+    syncInputs();
     renderTerminalSeg();
     $("backdrop").classList.add("open");
   };
@@ -201,18 +254,12 @@ async function init(): Promise<void> {
     composer.wd = v;
     renderPreview();
   };
-  ($("s-cmd") as HTMLInputElement).oninput = () => {
-    const v = ($("s-cmd") as HTMLInputElement).value;
-    settings.cmd = v;
-    composer.cmd = v;
-    renderPreview();
-  };
 
   renderDials();
   renderPreview();
   renderPresets();
   renderTerminalSeg();
-  syncSettingsInputs();
+  syncInputs();
 }
 
 window.addEventListener("DOMContentLoaded", () => {

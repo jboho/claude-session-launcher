@@ -1,11 +1,11 @@
   :root {
     --bg:#f4f4f7; --panel:#fff; --panel-2:#fafafa; --border:#e3e3e8; --btn:#fff;
-    --text:#1d1d1f; --muted:#7a7a80; --accent:#6c47ff; --accent-weak:#efeaff;
+    --text:#1d1d1f; --muted:#7a7a80; --accent:#d97757; --accent-weak:#f7ece7;
     --code-bg:#191920; --code-text:#e8e8f0;
   }
   @media (prefers-color-scheme: dark) {
     :root { --bg:#161619; --panel:#212127; --panel-2:#1c1c21; --border:#34343d; --btn:#26262d;
-      --text:#f2f2f5; --muted:#9a9aa4; --accent:#9b7dff; --accent-weak:#2c2547;
+      --text:#f2f2f5; --muted:#9a9aa4; --accent:#e0876a; --accent-weak:#3a2820;
       --code-bg:#0e0e12; --code-text:#e8e8f0; }
   }
   * { box-sizing:border-box; }
@@ -18,23 +18,23 @@
   .titlebar .name { font-size:12.5px; font-weight:700; color:var(--text); display:flex; align-items:center; gap:7px; }
   .badge { font-size:10px; padding:1px 6px; border-radius:999px; background:var(--accent-weak); color:var(--accent); font-weight:600; }
   .gear { border:1px solid var(--border); background:var(--btn); color:var(--muted); border-radius:7px;
-    padding:4px 9px; cursor:pointer; font:inherit; font-size:12px; font-weight:600; }
+    padding:2px 8px; cursor:pointer; font:inherit; font-size:17px; font-weight:600; line-height:1; }
   .gear:hover { border-color:var(--accent); color:var(--accent); }
 
   /* Compose — stacked groups, compact */
-  .compose { display:flex; flex-direction:column; gap:11px;
-    background:var(--panel-2); border:1px solid var(--border); border-radius:11px; padding:12px 12px; }
+  .compose { display:flex; flex-direction:column; gap:8px;
+    background:var(--panel-2); border:1px solid var(--border); border-radius:11px; padding:11px 12px; }
   .group { display:flex; align-items:center; gap:10px; }
   .group > .glabel { flex:0 0 48px; font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }
-  .row { display:flex; gap:6px; flex-wrap:wrap; }
+  .row { display:flex; gap:5px; flex-wrap:wrap; }
   .sq {
-    min-width:44px; height:38px; padding:0 9px; border:1.5px solid var(--border);
-    background:var(--btn); color:var(--text); border-radius:9px; cursor:pointer;
-    font:inherit; font-weight:600; font-size:12.5px; display:flex; align-items:center; justify-content:center;
+    min-width:36px; height:31px; padding:0 7px; border:1.5px solid var(--border);
+    background:var(--btn); color:var(--text); border-radius:8px; cursor:pointer;
+    font:inherit; font-weight:600; font-size:11.5px; display:flex; align-items:center; justify-content:center;
     transition:all .08s ease; -webkit-user-select:none; user-select:none;
   }
   .sq:hover { border-color:var(--accent); }
-  .sq.on { background:var(--accent); border-color:var(--accent); color:#fff; box-shadow:0 2px 7px rgba(108,71,255,.3); }
+  .sq.on { background:var(--accent); border-color:var(--accent); color:#fff; box-shadow:0 2px 7px rgba(217,119,87,.3); }
 
   /* Preview + actions */
   .preview { margin-top:11px; background:var(--code-bg); color:var(--code-text); border-radius:9px;
@@ -43,7 +43,7 @@
   .preview .caret { color:var(--accent); margin-right:5px; }
   .actions { display:flex; gap:8px; margin-top:9px; }
   button.act { flex:1; height:38px; border-radius:9px; font:inherit; font-weight:700; font-size:13px; cursor:pointer; }
-  button.launch { background:var(--accent); color:#fff; border:1px solid var(--accent); box-shadow:0 2px 8px rgba(108,71,255,.32); }
+  button.launch { background:var(--accent); color:#fff; border:1px solid var(--accent); box-shadow:0 2px 8px rgba(217,119,87,.32); }
   button.save { background:transparent; color:var(--accent); border:1.5px solid var(--border); flex:0 0 auto; padding:0 13px; }
   button.save:hover { border-color:var(--accent); }
 
@@ -89,3 +89,25 @@
     transition:all .18s ease; max-width:90%; box-shadow:0 8px 26px rgba(0,0,0,.3); }
   #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
   #toast b { color:var(--accent); }
+
+  /* Claude branding */
+  .titlebar .name { font-size:18px; font-weight:400;
+    font-family:"Anthropic Serif","Anthropic Serif Fallback Georgia","Anthropic Serif Fallback Times",
+      "Anthropic Serif Fallback DejaVu","Anthropic Serif Fallback Noto",Georgia,"Times New Roman",Times,serif; }
+  .titlebar .mark { color:var(--accent); font-size:17px; }
+
+  /* Disabled dial (e.g. Effort when Haiku is selected) */
+  .sq.disabled { opacity:.32; cursor:not-allowed; }
+  .sq.disabled:hover { border-color:var(--border); }
+
+  /* Inline command / prompt field */
+  .cmd-field { display:flex; align-items:center; gap:10px; margin-top:11px; }
+  .cmd-field .glabel { flex:0 0 48px; font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }
+  .cmd-field input { flex:1; padding:8px 10px; height:38px; border:1.5px solid var(--border); border-radius:9px;
+    background:var(--btn); color:var(--text); font:inherit; font-size:12.5px; }
+  .cmd-field input:focus { outline:none; border-color:var(--accent); }
+
+  /* Delete a preset */
+  .preset .del { width:26px; border:none; border-left:1px solid var(--border); background:transparent;
+    color:var(--muted); cursor:pointer; font-size:11px; }
+  .preset .del:hover { background:var(--border); color:#c4314b; }
