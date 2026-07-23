@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Claude Launcher — Widget (mockup)</title>
+<style>
+  :root {
+    --bg:#f4f4f7; --panel:#fff; --panel-2:#fafafa; --border:#e3e3e8; --btn:#fff;
+    --text:#1d1d1f; --muted:#7a7a80; --accent:#6c47ff; --accent-weak:#efeaff;
+    --code-bg:#191920; --code-text:#e8e8f0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#161619; --panel:#212127; --panel-2:#1c1c21; --border:#34343d; --btn:#26262d;
+      --text:#f2f2f5; --muted:#9a9aa4; --accent:#9b7dff; --accent-weak:#2c2547;
+      --code-bg:#0e0e12; --code-text:#e8e8f0; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font:13px/1.35 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    color:var(--text); background:var(--bg); }
+  .win { width:400px; margin:14px auto; padding:12px 13px 16px; background:var(--panel);
+    border:1px solid var(--border); border-radius:14px; box-shadow:0 10px 34px rgba(0,0,0,.18); }
+  .titlebar { display:flex; align-items:center; justify-content:space-between; padding:1px 1px 11px;
+    -webkit-user-select:none; user-select:none; }
+  .titlebar .name { font-size:12.5px; font-weight:700; color:var(--text); display:flex; align-items:center; gap:7px; }
+  .badge { font-size:10px; padding:1px 6px; border-radius:999px; background:var(--accent-weak); color:var(--accent); font-weight:600; }
+  .gear { border:1px solid var(--border); background:var(--btn); color:var(--muted); border-radius:7px;
+    padding:4px 9px; cursor:pointer; font:inherit; font-size:12px; font-weight:600; }
+  .gear:hover { border-color:var(--accent); color:var(--accent); }
+
+  /* Compose — stacked groups, compact */
+  .compose { display:flex; flex-direction:column; gap:11px;
+    background:var(--panel-2); border:1px solid var(--border); border-radius:11px; padding:12px 12px; }
+  .group { display:flex; align-items:center; gap:10px; }
+  .group > .glabel { flex:0 0 48px; font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }
+  .row { display:flex; gap:6px; flex-wrap:wrap; }
+  .sq {
+    min-width:44px; height:38px; padding:0 9px; border:1.5px solid var(--border);
+    background:var(--btn); color:var(--text); border-radius:9px; cursor:pointer;
+    font:inherit; font-weight:600; font-size:12.5px; display:flex; align-items:center; justify-content:center;
+    transition:all .08s ease; -webkit-user-select:none; user-select:none;
+  }
+  .sq:hover { border-color:var(--accent); }
+  .sq.on { background:var(--accent); border-color:var(--accent); color:#fff; box-shadow:0 2px 7px rgba(108,71,255,.3); }
+
+  /* Preview + actions */
+  .preview { margin-top:11px; background:var(--code-bg); color:var(--code-text); border-radius:9px;
+    padding:9px 11px; font-family:ui-monospace,"SF Mono",Menlo,monospace; font-size:11px;
+    white-space:pre-wrap; word-break:break-all; }
+  .preview .caret { color:var(--accent); margin-right:5px; }
+  .actions { display:flex; gap:8px; margin-top:9px; }
+  button.act { flex:1; height:38px; border-radius:9px; font:inherit; font-weight:700; font-size:13px; cursor:pointer; }
+  button.launch { background:var(--accent); color:#fff; border:1px solid var(--accent); box-shadow:0 2px 8px rgba(108,71,255,.32); }
+  button.save { background:transparent; color:var(--accent); border:1.5px solid var(--border); flex:0 0 auto; padding:0 13px; }
+  button.save:hover { border-color:var(--accent); }
+
+  /* Presets lane */
+  .lane-label { font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); margin:15px 1px 8px; }
+  .presets { display:flex; flex-wrap:wrap; gap:7px; }
+  .preset { display:flex; align-items:stretch; border:1.5px solid var(--border); border-radius:9px; overflow:hidden; background:var(--panel); }
+  .preset .go { padding:7px 10px; cursor:pointer; display:flex; flex-direction:column; gap:1px; min-width:92px; }
+  .preset .go:hover { background:var(--accent-weak); }
+  .preset .go .pname { font-weight:700; font-size:12px; }
+  .preset .go .pmeta { font-size:10px; color:var(--muted); }
+  .preset .edit { width:28px; border:none; border-left:1px solid var(--border); background:transparent; color:var(--muted); cursor:pointer; font-size:12px; }
+  .preset .edit:hover { background:var(--border); color:var(--text); }
+  .preset.plain .go .pname { color:var(--muted); font-style:italic; }
+
+  /* Settings overlay */
+  .backdrop { position:fixed; inset:0; background:rgba(0,0,0,.4); display:none; align-items:center; justify-content:center; }
+  .backdrop.open { display:flex; }
+  .sheet { background:var(--panel); border:1px solid var(--border); border-radius:13px; width:360px; max-width:92vw;
+    padding:16px 18px 18px; box-shadow:0 20px 50px rgba(0,0,0,.35); }
+  .sheet h2 { margin:0 0 3px; font-size:14px; }
+  .sheet .sub { color:var(--muted); font-size:11.5px; margin:0 0 14px; }
+  .sfld { display:flex; flex-direction:column; gap:5px; margin-bottom:12px; }
+  .sfld label { font-size:10px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); }
+  .sfld input { padding:7px 9px; border:1px solid var(--border); border-radius:8px; background:var(--panel-2); color:var(--text); font:inherit; font-size:12.5px; }
+  .sfld input:focus { outline:2px solid var(--accent); outline-offset:-1px; }
+  .seg { display:flex; gap:6px; }
+  .sheet .close { margin-top:4px; display:flex; justify-content:flex-end; }
+  .sheet .close button { padding:7px 15px; border-radius:8px; font:inherit; font-weight:700; font-size:12.5px; cursor:pointer;
+    background:var(--accent); color:#fff; border:1px solid var(--accent); }
+
+  #toast { position:fixed; left:50%; bottom:18px; transform:translateX(-50%) translateY(16px);
+    background:var(--code-bg); color:var(--code-text); padding:9px 13px; border-radius:9px;
+    font-family:ui-monospace,Menlo,monospace; font-size:11px; opacity:0; pointer-events:none;
+    transition:all .18s ease; max-width:90%; box-shadow:0 8px 26px rgba(0,0,0,.3); }
+  #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  #toast b { color:var(--accent); }
+</style>
+</head>
+<body>
+<div class="win">
+  <div class="titlebar">
+    <span class="name">⚡ Claude Launcher <span class="badge">mockup</span></span>
+    <button class="gear" id="open-settings">⚙</button>
+  </div>
+
+  <div class="compose">
+    <div class="group"><span class="glabel">Model</span><div class="row" id="g-model"></div></div>
+    <div class="group"><span class="glabel">Mode</span><div class="row" id="g-mode"></div></div>
+    <div class="group"><span class="glabel">Effort</span><div class="row" id="g-effort"></div></div>
+  </div>
+
+  <div class="preview"><span class="caret">▸</span><span id="preview"></span></div>
+  <div class="actions">
+    <button class="act launch" id="launch">Launch ⏎</button>
+    <button class="act save" id="save">★ Save</button>
+  </div>
+
+  <div class="lane-label">Presets — click to launch</div>
+  <div class="presets" id="presets"></div>
+</div>
+
+<div class="backdrop" id="backdrop">
+  <div class="sheet">
+    <h2>Settings</h2>
+    <p class="sub">Global defaults for quick launches. Presets keep their own dir + command.</p>
+    <div class="sfld"><label>Terminal</label><div class="seg" id="seg-terminal"></div></div>
+    <div class="sfld"><label>Default working directory</label><input id="s-wd" type="text" placeholder="/absolute/path — blank = current" /></div>
+    <div class="sfld"><label>Default initial command / prompt</label><input id="s-cmd" type="text" placeholder="e.g. /pr-queue — blank = none" /></div>
+    <div class="close"><button id="close-settings">Done</button></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+  const MODELS  = [ {v:"opus",label:"Opus"}, {v:"sonnet",label:"Sonnet"}, {v:"haiku",label:"Haiku"} ];
+  const MODES   = [ {v:"plan",label:"Plan"}, {v:"auto",label:"Auto"}, {v:"acceptEdits",label:"Accept"} ];
+  const EFFORTS = [ "low","medium","high","xhigh","max" ];
+  const EFFORT_LABEL = { low:"Low", medium:"Med", high:"High", xhigh:"XHigh", max:"Max" };
+  const TERMINALS = [ "iTerm", "Terminal" ];
+
+  const q = (s) => `'${s.replace(/'/g, `'\\''`)}'`;
+  const build = (c) => {
+    const p = ["claude"];
+    if (c.model) p.push("--model", c.model);
+    if (c.mode) p.push("--permission-mode", c.mode);
+    if (c.effort) p.push("--effort", c.effort);
+    if ((c.cmd||"").trim()) p.push(q(c.cmd.trim()));
+    const cmd = p.join(" ");
+    return (c.wd||"").trim() ? `cd ${q(c.wd.trim())} && ${cmd}` : cmd;
+  };
+
+  const sel = { model:"opus", mode:"auto", effort:"high" };
+  const settings = { terminal:"iTerm", wd:"~/Code", cmd:"" };
+
+  let presets = [
+    { id:1, name:"Morning", model:"sonnet", mode:"auto", effort:"low",  wd:"~/Code", cmd:"" },
+    { id:2, name:"PR review", model:"opus", mode:"auto", effort:"high", wd:"~/Code", cmd:"/pr-queue" },
+    { id:3, name:"Explore", model:"haiku",  mode:"plan", effort:"low",  wd:"",       cmd:"" },
+  ];
+  let nextId = 4;
+  const $ = (id) => document.getElementById(id);
+  const composed = () => ({ ...sel, wd:settings.wd, cmd:settings.cmd });
+
+  function sqBtn(label, on, onclick) {
+    const b = document.createElement("button");
+    b.className = "sq" + (on?" on":""); b.textContent = label; b.onclick = onclick;
+    return b;
+  }
+  function renderDials() {
+    const gm = $("g-model"); gm.innerHTML = "";
+    for (const m of MODELS) gm.appendChild(sqBtn(m.label, sel.model===m.v,
+      () => { sel.model=(sel.model===m.v?"":m.v); renderDials(); renderPreview(); }));
+    const gd = $("g-mode"); gd.innerHTML = "";
+    for (const md of MODES) gd.appendChild(sqBtn(md.label, sel.mode===md.v,
+      () => { sel.mode=(sel.mode===md.v?"":md.v); renderDials(); renderPreview(); }));
+    const ge = $("g-effort"); ge.innerHTML = "";
+    for (const e of EFFORTS) ge.appendChild(sqBtn(EFFORT_LABEL[e], sel.effort===e,
+      () => { sel.effort=(sel.effort===e?"":e); renderDials(); renderPreview(); }));
+  }
+  function renderPreview() { $("preview").textContent = build(composed()); }
+
+  function renderPresets() {
+    const wrap = $("presets"); wrap.innerHTML = "";
+    wrap.appendChild(presetEl({ id:0, name:"Plain claude", model:"", mode:"", effort:"", wd:"", cmd:"" }, true));
+    for (const p of presets) wrap.appendChild(presetEl(p, false));
+  }
+  function presetEl(p, plain) {
+    const el = document.createElement("div");
+    el.className = "preset" + (plain?" plain":"");
+    const meta = [p.model||"·", p.mode||"·", p.effort||"·"].join(" · ");
+    const go = document.createElement("div");
+    go.className = "go";
+    go.innerHTML = `<span class="pname">${p.name}</span><span class="pmeta">${plain?"defaults":meta}</span>`;
+    go.onclick = () => launch(p);
+    el.appendChild(go);
+    if (!plain) {
+      const ed = document.createElement("button");
+      ed.className = "edit"; ed.textContent = "✎"; ed.title = "Load into composer";
+      ed.onclick = () => { Object.assign(sel,{model:p.model,mode:p.mode,effort:p.effort});
+        settings.wd=p.wd; settings.cmd=p.cmd; syncSettingsInputs(); renderDials(); renderPreview();
+        toast(`Loaded <b>${p.name}</b>`); };
+      el.appendChild(ed);
+    }
+    return el;
+  }
+  function renderTerminalSeg() {
+    const seg = $("seg-terminal"); seg.innerHTML = "";
+    for (const t of TERMINALS) seg.appendChild(sqBtn(t, settings.terminal===t,
+      () => { settings.terminal=t; renderTerminalSeg(); }));
+  }
+  function syncSettingsInputs() { $("s-wd").value=settings.wd; $("s-cmd").value=settings.cmd; }
+
+  let toastT;
+  function toast(msg){ const t=$("toast"); t.innerHTML=msg; t.classList.add("show");
+    clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2400); }
+  function launch(c){ toast(`Launch <b>${c.name||"session"}</b> in ${settings.terminal} → ` + build(c)); }
+
+  $("launch").onclick = () => launch({ ...composed(), name:"current" });
+  $("save").onclick = () => { const name=prompt("Name this preset:",""); if(!name) return;
+    presets.push({ id:nextId++, name, ...sel, wd:settings.wd, cmd:settings.cmd }); renderPresets(); toast(`Saved <b>${name}</b>`); };
+  $("open-settings").onclick = () => { syncSettingsInputs(); renderTerminalSeg(); $("backdrop").classList.add("open"); };
+  $("close-settings").onclick = () => $("backdrop").classList.remove("open");
+  $("backdrop").onclick = (e) => { if(e.target===$("backdrop")) $("backdrop").classList.remove("open"); };
+  $("s-wd").oninput = () => { settings.wd=$("s-wd").value; renderPreview(); };
+  $("s-cmd").oninput = () => { settings.cmd=$("s-cmd").value; renderPreview(); };
+
+  renderDials(); renderPreview(); renderPresets(); renderTerminalSeg(); syncSettingsInputs();
+</script>
+</body>
+</html>

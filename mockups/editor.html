@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Claude Launcher — Combos (mockup)</title>
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --panel: #ffffff;
+    --panel-2: #fafafa;
+    --border: #e2e2e6;
+    --text: #1d1d1f;
+    --muted: #6e6e73;
+    --accent: #6c47ff;
+    --accent-weak: #efeaff;
+    --danger: #c4314b;
+    --ok: #1a7f37;
+    --code-bg: #1d1d24;
+    --code-text: #e6e6ef;
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a1e;
+      --panel: #232329;
+      --panel-2: #1f1f24;
+      --border: #35353d;
+      --text: #f2f2f5;
+      --muted: #a1a1ab;
+      --accent: #9b7dff;
+      --accent-weak: #2b2545;
+      --danger: #ff7b8f;
+      --ok: #5fce7f;
+      --code-bg: #101014;
+      --code-text: #e6e6ef;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+  }
+  .titlebar {
+    padding: 10px 16px;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    background: var(--panel-2);
+    -webkit-user-select: none; user-select: none;
+  }
+  .layout { display: grid; grid-template-columns: 220px 1fr; height: calc(100vh - 41px); }
+  /* Sidebar */
+  aside {
+    border-right: 1px solid var(--border);
+    background: var(--panel-2);
+    display: flex; flex-direction: column;
+    min-height: 0;
+  }
+  .new-btn {
+    margin: 12px; padding: 8px 10px;
+    border: 1px dashed var(--border); border-radius: var(--radius);
+    background: transparent; color: var(--accent);
+    font-weight: 600; cursor: pointer;
+  }
+  .new-btn:hover { background: var(--accent-weak); border-style: solid; }
+  ul.combos { list-style: none; margin: 0; padding: 0 8px 8px; overflow-y: auto; }
+  ul.combos li {
+    padding: 9px 10px; border-radius: 8px; cursor: pointer;
+    display: flex; align-items: center; gap: 8px; color: var(--text);
+  }
+  ul.combos li .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex: none; }
+  ul.combos li.active { background: var(--accent-weak); color: var(--accent); font-weight: 600; }
+  ul.combos li.active .dot { background: var(--accent); }
+  ul.combos li:hover:not(.active) { background: var(--border); }
+  ul.combos .empty { color: var(--muted); font-style: italic; cursor: default; }
+  /* Form */
+  main { padding: 20px 24px; overflow-y: auto; min-height: 0; }
+  .field { margin-bottom: 14px; display: flex; flex-direction: column; gap: 5px; max-width: 460px; }
+  .field label { font-weight: 600; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+  .field input[type=text], .field select {
+    padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--panel); color: var(--text); font: inherit;
+  }
+  .field input:focus, .field select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .check { flex-direction: row; align-items: center; gap: 8px; max-width: 460px; }
+  .check label { text-transform: none; letter-spacing: 0; font-size: 14px; color: var(--text); }
+  .check input:disabled + label { color: var(--muted); }
+  .hint { color: var(--muted); font-size: 12px; }
+  .preview {
+    max-width: 460px; margin: 16px 0; background: var(--code-bg); color: var(--code-text);
+    border-radius: var(--radius); padding: 12px 14px; font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 12.5px; white-space: pre-wrap; word-break: break-all;
+  }
+  .preview .caret { color: var(--accent); }
+  .errors { max-width: 460px; color: var(--danger); font-size: 13px; min-height: 18px; margin: 4px 0 12px; }
+  .actions { display: flex; gap: 10px; max-width: 460px; }
+  button.primary, button.ghost {
+    padding: 9px 16px; border-radius: 8px; font: inherit; font-weight: 600; cursor: pointer;
+  }
+  button.primary { background: var(--accent); color: #fff; border: 1px solid var(--accent); }
+  button.primary:disabled { opacity: .5; cursor: not-allowed; }
+  button.ghost { background: transparent; color: var(--danger); border: 1px solid var(--border); }
+  button.ghost:disabled { opacity: .4; cursor: not-allowed; }
+  .badge { font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--accent-weak); color: var(--accent); font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="titlebar">⚡ Claude Launcher — Combos <span class="badge">mockup</span></div>
+  <div class="layout">
+    <aside>
+      <button class="new-btn" id="new">+ New combo</button>
+      <ul class="combos" id="combo-list"></ul>
+    </aside>
+    <main>
+      <div class="field">
+        <label for="name">Name</label>
+        <input id="name" type="text" placeholder="e.g. PR review" />
+      </div>
+      <div class="field">
+        <label for="model">Model</label>
+        <input id="model" type="text" list="model-suggestions" placeholder="opus / sonnet / fable / full id" />
+        <datalist id="model-suggestions"></datalist>
+      </div>
+      <div class="field">
+        <label for="permissionMode">Permission mode</label>
+        <select id="permissionMode"></select>
+      </div>
+      <div class="field">
+        <label for="effort">Effort</label>
+        <select id="effort"></select>
+      </div>
+      <div class="field check">
+        <input id="fast" type="checkbox" />
+        <label for="fast" id="fast-label">Fast (Opus only)</label>
+      </div>
+      <div class="field">
+        <label for="workingDirectory">Working directory</label>
+        <input id="workingDirectory" type="text" placeholder="/absolute/path (blank = current)" />
+      </div>
+      <div class="field">
+        <label for="initialCommand">Initial command / prompt</label>
+        <input id="initialCommand" type="text" placeholder="e.g. /pr-queue  (blank = none)" />
+      </div>
+
+      <div class="preview"><span class="caret">▸ </span><span id="preview"></span></div>
+      <div class="errors" id="errors"></div>
+
+      <div class="actions">
+        <button class="primary" id="save">Save</button>
+        <button class="ghost" id="delete">Delete</button>
+      </div>
+    </main>
+  </div>
+
+<script type="module">
+  // ---- core logic (mirrors the plan's pure core modules) -------------------
+  const PERMISSION_MODES = ["acceptEdits", "auto", "bypassPermissions", "manual", "plan"];
+  const EFFORTS = ["low", "medium", "high", "xhigh", "max"];
+  const MODEL_SUGGESTIONS = ["opus", "sonnet", "fable", "claude-haiku-4-5-20251001"];
+
+  const isOpusModel = (m) => {
+    const s = String(m || "").trim().toLowerCase();
+    return s === "opus" || s.startsWith("claude-opus");
+  };
+  const shellQuote = (s) => `'${s.replace(/'/g, `'\\''`)}'`;
+  const buildLaunchString = (c) => {
+    const parts = ["claude"];
+    if (c.model.trim()) parts.push("--model", c.model.trim());
+    if (c.permissionMode) parts.push("--permission-mode", c.permissionMode);
+    if (c.effort) parts.push("--effort", c.effort);
+    if (c.initialCommand.trim()) parts.push(shellQuote(c.initialCommand.trim()));
+    const cmd = parts.join(" ");
+    return c.workingDirectory.trim() ? `cd ${shellQuote(c.workingDirectory.trim())} && ${cmd}` : cmd;
+  };
+  const validateCombo = (c) => {
+    const errors = [];
+    if (!c.name.trim()) errors.push("Name is required.");
+    if (c.fast && !isOpusModel(c.model)) errors.push("Fast mode requires an Opus model.");
+    return { valid: errors.length === 0, errors };
+  };
+  const emptyCombo = () => ({ id: "", name: "", model: "", permissionMode: "", effort: "", fast: false, workingDirectory: "", initialCommand: "" });
+  const uid = () => "c_" + Math.random().toString(36).slice(2, 9);
+
+  // ---- mock in-memory store (stands in for the IPC/JSON backend) -----------
+  let combos = [
+    { id: uid(), name: "Morning startup", model: "sonnet", permissionMode: "auto", effort: "low", fast: false, workingDirectory: "~/Code", initialCommand: "" },
+    { id: uid(), name: "PR review",       model: "opus",   permissionMode: "auto", effort: "high", fast: true,  workingDirectory: "~/Code", initialCommand: "/pr-queue" },
+    { id: uid(), name: "Explore (cheap)", model: "haiku",  permissionMode: "plan", effort: "low",  fast: false, workingDirectory: "", initialCommand: "" },
+  ];
+  let editing = { ...combos[1] };
+
+  const $ = (id) => document.getElementById(id);
+
+  function renderList() {
+    const ul = $("combo-list");
+    ul.innerHTML = "";
+    if (combos.length === 0) {
+      const li = document.createElement("li");
+      li.className = "empty"; li.textContent = "No combos yet";
+      ul.appendChild(li); return;
+    }
+    for (const c of combos) {
+      const li = document.createElement("li");
+      if (c.id === editing.id) li.className = "active";
+      li.innerHTML = `<span class="dot"></span>${c.name || "(unnamed)"}`;
+      li.onclick = () => { editing = { ...c }; renderForm(); renderList(); };
+      ul.appendChild(li);
+    }
+  }
+
+  function renderForm() {
+    $("name").value = editing.name;
+    $("model").value = editing.model;
+    $("permissionMode").value = editing.permissionMode;
+    $("effort").value = editing.effort;
+    $("fast").checked = editing.fast;
+    $("workingDirectory").value = editing.workingDirectory;
+    $("initialCommand").value = editing.initialCommand;
+    $("delete").disabled = !editing.id;
+    updateDerived();
+  }
+
+  function readForm() {
+    return {
+      ...editing,
+      name: $("name").value,
+      model: $("model").value,
+      permissionMode: $("permissionMode").value,
+      effort: $("effort").value,
+      fast: $("fast").checked,
+      workingDirectory: $("workingDirectory").value,
+      initialCommand: $("initialCommand").value,
+    };
+  }
+
+  function updateDerived() {
+    const c = readForm();
+    const opus = isOpusModel(c.model);
+    const fastBox = $("fast");
+    fastBox.disabled = !opus;
+    if (!opus && fastBox.checked) { fastBox.checked = false; c.fast = false; }
+    $("fast-label").textContent = opus ? "Fast" : "Fast (Opus only)";
+    const res = validateCombo(readForm());
+    $("errors").textContent = res.errors.join("  •  ");
+    $("save").disabled = !res.valid;
+    $("preview").textContent = buildLaunchString(readForm());
+  }
+
+  function save() {
+    const c = readForm();
+    if (!validateCombo(c).valid) return;
+    if (!c.id) c.id = uid();
+    const i = combos.findIndex((x) => x.id === c.id);
+    if (i >= 0) combos[i] = c; else combos.push(c);
+    editing = { ...c };
+    renderForm(); renderList();
+  }
+
+  function del() {
+    if (!editing.id) return;
+    combos = combos.filter((x) => x.id !== editing.id);
+    editing = emptyCombo();
+    renderForm(); renderList();
+  }
+
+  function newCombo() { editing = emptyCombo(); renderForm(); renderList(); }
+
+  // ---- init ----------------------------------------------------------------
+  $("permissionMode").innerHTML = `<option value="">(claude default)</option>` +
+    PERMISSION_MODES.map((m) => `<option value="${m}">${m}</option>`).join("");
+  $("effort").innerHTML = `<option value="">(claude default)</option>` +
+    EFFORTS.map((m) => `<option value="${m}">${m}</option>`).join("");
+  $("model-suggestions").innerHTML = MODEL_SUGGESTIONS.map((m) => `<option value="${m}"></option>`).join("");
+
+  for (const id of ["name","model","permissionMode","effort","fast","workingDirectory","initialCommand"]) {
+    $(id).addEventListener("input", updateDerived);
+    $(id).addEventListener("change", updateDerived);
+  }
+  $("save").addEventListener("click", save);
+  $("delete").addEventListener("click", del);
+  $("new").addEventListener("click", newCombo);
+
+  renderForm(); renderList();
+</script>
+</body>
+</html>
