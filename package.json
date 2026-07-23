@@ -8,11 +8,22 @@
     "build": "tsc && node scripts/copy-assets.mjs",
     "start": "pnpm build && electron .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "dist:mac": "pnpm build && electron-builder --mac --dir"
+  },
+  "build": {
+    "appId": "com.jboho.claude-launcher",
+    "productName": "Claude Launcher",
+    "files": ["dist/**", "package.json"],
+    "mac": {
+      "target": "dir",
+      "category": "public.app-category.developer-tools"
+    }
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "electron": "^33.0.0",
+    "electron-builder": "^25.1.8",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
   }
