@@ -19,16 +19,15 @@ first, then Windows) that anyone on the team can install and use.
 - Terminals: iTerm (new tab) · Apple Terminal · Ghostty
 - macOS packaging: unsigned `.app` via `pnpm dist:mac` (electron-builder)
 - Portable JSON config (`~/.config/claude-launcher/`, `%APPDATA%` on Windows; `CLAUDE_LAUNCHER_CONFIG` override)
+- **#3 — Make it work for anyone (generality):**
+  - `claude` binary detection via a login-shell `command -v claude` probe (matches the terminal's own PATH); a "Claude not found" banner shows only when detection fails **and** no override is set; an optional "Claude binary" path field in Settings — when set, its shell-quoted value is used in the launch string in place of bare `claude`.
+  - Terminal detection: only installed terminals (iTerm / Apple Terminal / Ghostty, probed via `open -Ra`) are offered in Settings; falls back to Terminal, which always ships with macOS.
+  - Configurable model list: an editable Models list in Settings (value + label rows, add/remove); unknown/custom model values are unrestricted, while known families (Haiku, including dated ids like `claude-haiku-…`) still grey out Effort + Auto. Model values are validated against a shell-safe charset (`[A-Za-z0-9._-]+`) since they're written unquoted into the launch string.
+  - Configurable global hotkey: a recorder control in Settings; default remains Option+W (`Alt+W`); registered from saved settings at startup with a same-key/default fallback, and re-registered live from Settings with honest feedback on which accelerator actually ended up active.
+  - Starter presets carry **no hardcoded paths** (done — working dir left blank).
+  - *Deferred:* no dedicated model-version-picker UI — the model list still takes free-text aliases/full dated ids, not a curated version selector. `[1m]` bracket context-variants (e.g. `opus[1m]`) are **not** supported — the model-value validator intentionally rejects brackets, since that would require the model token to be quoted in the launch string, which is unimplemented.
 
 ---
-
-## #3 — Make it work for anyone (generality)
-
-- **Detect `claude` on PATH**; add a Settings field for the claude binary path; friendly "Claude Code not found — install it" guidance when missing.
-- **Detect installed terminals** per-OS and show only those (don't offer iTerm on a machine without it).
-- **Configurable model list** — not hardcoded `opus`/`sonnet`/`haiku`; allow `fable` / full model IDs.
-- **Configurable global hotkey** in Settings (⌥W is the default).
-- Starter presets carry **no hardcoded paths** (done — working dir left blank).
 
 ## #4 — Distribution (internal for now)
 
