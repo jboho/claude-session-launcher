@@ -27,6 +27,22 @@ export function isHaiku(model: string): boolean {
 /** Autonomous permission modes are gated to capable models — Haiku rejects them. */
 export const HAIKU_BLOCKED_MODES = ["auto"];
 
+export interface ModelCapabilities {
+  effort: boolean; // model supports --effort
+  blockedModes: string[]; // permission modes the model rejects
+}
+
+/** Capabilities for a model value. Known families are restricted; unknown models are unrestricted. */
+export function capabilitiesFor(model: string): ModelCapabilities {
+  if (isHaiku(model)) return { effort: false, blockedModes: HAIKU_BLOCKED_MODES };
+  return { effort: true, blockedModes: [] };
+}
+
+/** The model list to show: the user's configured list, or the built-in defaults when empty/invalid. */
+export function effectiveModels(models: Option[] | undefined): Option[] {
+  return Array.isArray(models) && models.length > 0 ? models : MODELS;
+}
+
 export const EFFORTS: Option[] = [
   { value: "low", label: "Low" },
   { value: "medium", label: "Med" },
