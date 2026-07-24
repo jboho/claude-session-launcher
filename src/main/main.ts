@@ -11,11 +11,11 @@ const dirname = path.dirname(fileURLToPath(import.meta.url));
 // Identify as "Claude Launcher" (not the default unpackaged "app" label).
 app.setName("Claude Launcher");
 
-// Menu-bar icon: a Claude-style sunburst template PNG (black-on-transparent; macOS
-// tints it for light/dark). An empty nativeImage renders a zero-width, invisible
-// status item, so a real image is required for the tray to appear.
-const TRAY_ICON_DATA_URL =
-  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAQAAAD8x0bcAAAAMUlEQVR4nGNgoAX4j4dHmiJkCSxK/uPQhyH+HwdJmnXUBwStI+hwooOAKOuoG3eUAABrcR/h1B98RgAAAABJRU5ErkJggg==";
+// Menu-bar icon: the Claude bolt template PNG (black-on-transparent; macOS tints it
+// for light/dark). Loaded from disk (dist/assets, copied by scripts/copy-assets.mjs);
+// createFromPath auto-picks up the @2x variant in the same directory. An empty
+// nativeImage renders a zero-width, invisible status item, so a real image is required.
+const TRAY_ICON_PATH = path.join(dirname, "../assets/trayTemplate.png");
 
 let tray: Tray | null = null;
 let panel: BrowserWindow | null = null;
@@ -102,7 +102,7 @@ app.whenReady().then(async () => {
   registerIpc({ setHotkey });
   panel = createPanel();
 
-  const icon = nativeImage.createFromDataURL(TRAY_ICON_DATA_URL);
+  const icon = nativeImage.createFromPath(TRAY_ICON_PATH);
   icon.setTemplateImage(true);
   tray = new Tray(icon);
   tray.setToolTip("Claude Launcher");
