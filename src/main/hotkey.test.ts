@@ -12,4 +12,10 @@ describe("hotkeyCandidates", () => {
   test("de-duplicates when preferred equals the default", () => {
     expect(hotkeyCandidates("Alt+W")).toEqual(["Alt+W"]);
   });
+  test("includes the current binding as a fallback before the default", () => {
+    expect(hotkeyCandidates("Control+Alt+C", "Control+Shift+K")).toEqual(["Control+Alt+C", "Control+Shift+K", DEFAULT_HOTKEY]);
+  });
+  test("dedups current against preferred and default", () => {
+    expect(hotkeyCandidates("Alt+W", "Alt+W")).toEqual(["Alt+W"]);
+  });
 });

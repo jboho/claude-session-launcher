@@ -12,6 +12,7 @@ import {
 import { buildLaunchString } from "../core/launch-string.js";
 import { validatePreset, isValidModelValue } from "../core/validate.js";
 import { eventToAccelerator } from "../core/accelerator.js";
+import { resolveClaudeCommand } from "../core/claude-binary.js";
 
 declare global {
   interface Window {
@@ -93,7 +94,7 @@ function renderDials(): void {
 }
 
 function renderPreview(): void {
-  $("preview").textContent = buildLaunchString(composed());
+  $("preview").textContent = buildLaunchString(composed(), resolveClaudeCommand(settings.claudeBinary));
 }
 
 function presetEl(p: Preset, plain: boolean): HTMLElement {
@@ -250,15 +251,11 @@ function initHotkeyRecorder(): void {
       if (!accel) return; // wait for a full chord (modifier + key)
       cleanup();
       const active = await window.launcher.setHotkey(accel);
-      if (active === accel) {
-        settings.hotkey = accel;
-        void window.launcher.saveSettings(settings);
-        toast(`Hotkey set to ${accel}`);
-      } else {
-        settings.hotkey = "";
-        void window.launcher.saveSettings(settings);
-        toast(active ? `${accel} unavailable — using ${active}` : `${accel} unavailable — no hotkey active`);
-      }
+      settings.hotkey = active;
+      void window.launcher.saveSettings(settings);
+      toast(active === accel
+        ? `Hotkey set to ${accel}`
+        : (active ? `${accel} unavailable — using ${active}` : `${accel} unavailable — no hotkey active`));
       render();
     };
     cancelRecording = cleanup;
@@ -266,12 +263,15 @@ function initHotkeyRecorder(): void {
   };
   ($("hotkey-reset") as HTMLButtonElement).onclick = async () => {
     const active = await window.launcher.setHotkey("Alt+W");
-    settings.hotkey = "";
+    settings.hotkey = active === "Alt+W" ? "" : active;
     void window.launcher.saveSettings(settings);
     render();
     toast(active ? `Hotkey reset to ${active}` : "Alt+W unavailable");
   };
   window.addEventListener("blur", () => { cancelRecording?.(); render(); });
+  window.addEventListener("focusin", (e) => {
+    if (cancelRecording && e.target !== rec) { cancelRecording(); render(); }
+  });
 }
 
 function closeSettings(): void {
@@ -362,6 +362,13 @@ async function init(): Promise<void> {
     availableTerminals = ["Terminal"];
   }
 
+  if (!availableTerminals.includes(settings.terminal)) {
+    settings.terminal = availableTerminals.includes("Terminal")
+      ? "Terminal"
+      : (availableTerminals[0] ?? "Terminal");
+    void window.launcher.saveSettings(settings);
+  }
+
   $("launch").onclick = () => void launch(composed(), "current");
   $("save").onclick = () => openSaveRow();
   $("save-confirm").onclick = () => void confirmSave();
@@ -392,6 +399,7 @@ async function init(): Promise<void> {
   };
   ($("s-claude") as HTMLInputElement).oninput = () => {
     settings.claudeBinary = ($("s-claude") as HTMLInputElement).value;
+    renderPreview();
   };
   $("add-model").onclick = () => {
     settings.models = [...currentModels(), { value: "", label: "" }];

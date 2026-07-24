@@ -23,8 +23,9 @@ let activeHotkey = "";
 
 /** (Re)register the global hotkey. Returns the accelerator that actually ended up active ("" if none). */
 function setHotkey(preferred: string): string {
+  const prev = activeHotkey;
   globalShortcut.unregisterAll();
-  for (const hk of hotkeyCandidates(preferred)) {
+  for (const hk of hotkeyCandidates(preferred, prev)) {
     try {
       if (globalShortcut.register(hk, () => togglePanel())) {
         activeHotkey = hk;
