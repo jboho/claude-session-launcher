@@ -11,6 +11,7 @@ import {
 } from "../core/types.js";
 import { buildLaunchString } from "../core/launch-string.js";
 import { validatePreset, isValidModelValue } from "../core/validate.js";
+import { eventToAccelerator } from "../core/accelerator.js";
 
 declare global {
   interface Window {
@@ -24,12 +25,13 @@ declare global {
       validateWorkdir(dir: string): Promise<boolean>;
       detectClaude(): Promise<{ found: boolean; path?: string }>;
       detectTerminals(): Promise<string[]>;
-      setHotkey(accel: string): Promise<boolean>;
+      setHotkey(accel: string): Promise<string>;
     };
   }
 }
 
 let availableTerminals: string[] = ["Terminal"]; // filled by detection; Terminal always present
+let cancelRecording: (() => void) | null = null;
 
 let presets: Preset[] = [];
 let settings: Settings = { terminal: "iTerm", wd: "", cmd: "", claudeBinary: "", models: [], hotkey: "" };
@@ -228,7 +230,52 @@ function persistModels(): void {
   renderPreview();
 }
 
+function initHotkeyRecorder(): void {
+  const rec = $("hotkey-rec") as HTMLButtonElement;
+  const render = (): void => { rec.textContent = settings.hotkey || "Alt+W"; };
+  render();
+  rec.onclick = () => {
+    cancelRecording?.(); // guard re-entrancy: detach any prior in-progress listener
+    rec.classList.add("recording");
+    rec.textContent = "Press a shortcut…";
+    const cleanup = (): void => {
+      window.removeEventListener("keydown", onKey, true);
+      cancelRecording = null;
+      rec.classList.remove("recording");
+    };
+    const onKey = async (e: KeyboardEvent): Promise<void> => {
+      if (e.key === "Escape") { cleanup(); render(); return; }
+      e.preventDefault();
+      const accel = eventToAccelerator(e);
+      if (!accel) return; // wait for a full chord (modifier + key)
+      cleanup();
+      const active = await window.launcher.setHotkey(accel);
+      if (active === accel) {
+        settings.hotkey = accel;
+        void window.launcher.saveSettings(settings);
+        toast(`Hotkey set to ${accel}`);
+      } else {
+        settings.hotkey = "";
+        void window.launcher.saveSettings(settings);
+        toast(active ? `${accel} unavailable — using ${active}` : `${accel} unavailable — no hotkey active`);
+      }
+      render();
+    };
+    cancelRecording = cleanup;
+    window.addEventListener("keydown", onKey, true);
+  };
+  ($("hotkey-reset") as HTMLButtonElement).onclick = async () => {
+    const active = await window.launcher.setHotkey("Alt+W");
+    settings.hotkey = "";
+    void window.launcher.saveSettings(settings);
+    render();
+    toast(active ? `Hotkey reset to ${active}` : "Alt+W unavailable");
+  };
+  window.addEventListener("blur", () => { cancelRecording?.(); render(); });
+}
+
 function closeSettings(): void {
+  cancelRecording?.();
   settings.models = settings.models.filter((m) => isValidModelValue(m.value));
   void window.launcher.saveSettings(settings);
   $("backdrop").classList.remove("open");
@@ -357,6 +404,7 @@ async function init(): Promise<void> {
   renderTerminalSeg();
   syncInputs();
   void refreshClaudeStatus();
+  initHotkeyRecorder();
 }
 
 window.addEventListener("DOMContentLoaded", () => {

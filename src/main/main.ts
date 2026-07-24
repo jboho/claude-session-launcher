@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { registerIpc } from "./ipc.js";
 import { ensureSeedPresets } from "./seed.js";
 import { loadSettings } from "../core/settings.js";
-import { hotkeyCandidates, DEFAULT_HOTKEY } from "./hotkey.js";
+import { hotkeyCandidates } from "./hotkey.js";
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -21,22 +21,21 @@ let tray: Tray | null = null;
 let panel: BrowserWindow | null = null;
 let activeHotkey = "";
 
-/** (Re)register the global hotkey. Returns true iff the REQUESTED accelerator got it. */
-function setHotkey(preferred: string): boolean {
+/** (Re)register the global hotkey. Returns the accelerator that actually ended up active ("" if none). */
+function setHotkey(preferred: string): string {
   globalShortcut.unregisterAll();
-  const wanted = preferred?.trim() || DEFAULT_HOTKEY;
   for (const hk of hotkeyCandidates(preferred)) {
     try {
       if (globalShortcut.register(hk, () => togglePanel())) {
         activeHotkey = hk;
-        return hk === wanted;
+        return hk;
       }
     } catch {
       // malformed accelerator string — treat as a failed registration, try the next candidate
     }
   }
   activeHotkey = "";
-  return false;
+  return "";
 }
 
 function createPanel(): BrowserWindow {

@@ -11,5 +11,5 @@ contextBridge.exposeInMainWorld("launcher", {
   validateWorkdir: (dir: string): Promise<boolean> => ipcRenderer.invoke("validate-workdir", dir),
   detectClaude: (): Promise<{ found: boolean; path?: string }> => ipcRenderer.invoke("claude:detect"),
   detectTerminals: (): Promise<string[]> => ipcRenderer.invoke("terminals:detect"),
-  setHotkey: (accel: string): Promise<boolean> => ipcRenderer.invoke("hotkey:set", accel),
+  setHotkey: (accel: string): Promise<string> => ipcRenderer.invoke("hotkey:set", accel),
 });

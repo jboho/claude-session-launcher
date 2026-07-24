@@ -130,3 +130,12 @@
   .model-row .rm:hover { color:#c4314b; border-color:#c4314b; }
   .add-model { margin-top:7px; align-self:flex-start; padding:5px 10px; border:1px dashed var(--border);
     background:transparent; color:var(--accent); border-radius:7px; cursor:pointer; font:inherit; font-size:12px; }
+
+  /* Hotkey recorder */
+  .hk-row { display:flex; gap:6px; }
+  .hk-rec { flex:1; padding:7px 9px; border:1px solid var(--border); border-radius:8px;
+    background:var(--panel-2); color:var(--text); font:inherit; font-size:12.5px; cursor:pointer; text-align:left; }
+  .hk-rec.recording { border-color:var(--accent); color:var(--accent); font-style:italic; }
+  .hk-reset { flex:0 0 auto; padding:7px 11px; border:1px solid var(--border); border-radius:8px;
+    background:transparent; color:var(--muted); font:inherit; font-size:12px; cursor:pointer; }
+  .hk-reset:hover { border-color:var(--accent); color:var(--accent); }
