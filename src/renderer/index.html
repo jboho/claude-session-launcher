@@ -8,6 +8,7 @@
 </head>
 <body>
   <div class="win">
+    <div class="banner" id="claude-banner">⚠ Claude Code not found on your PATH — <a href="https://code.claude.com/docs" target="_blank" rel="noreferrer">install it</a>, or set a path in ⚙ Settings.</div>
     <div class="titlebar">
       <span class="name"><span class="mark">✳</span> Claude Launcher</span>
       <button class="gear" id="open-settings">⚙</button>
@@ -41,6 +42,7 @@
       <p class="sub">Global defaults. Presets keep their own working dir + command.</p>
       <div class="sfld"><label>Terminal</label><div class="seg" id="seg-terminal"></div></div>
       <div class="sfld"><label>Default working directory</label><input id="s-wd" type="text" placeholder="/absolute/path — blank = current" /></div>
+      <div class="sfld"><label>Claude binary (optional)</label><input id="s-claude" type="text" placeholder="claude (auto-detected on PATH)" /></div>
       <div class="close"><button id="close-settings">Done</button></div>
     </div>
   </div>

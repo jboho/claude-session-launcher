@@ -165,6 +165,7 @@ function renderTerminalSeg(): void {
 
 function syncInputs(): void {
   ($("s-wd") as HTMLInputElement).value = settings.wd;
+  ($("s-claude") as HTMLInputElement).value = settings.claudeBinary;
   ($("cmd") as HTMLInputElement).value = composer.cmd;
 }
 
@@ -195,6 +196,17 @@ function openSaveRow(): void {
 
 function closeSaveRow(): void {
   $("save-row").classList.remove("open");
+}
+
+async function refreshClaudeStatus(): Promise<void> {
+  let found = false;
+  try {
+    found = (await window.launcher.detectClaude()).found;
+  } catch {
+    found = false;
+  }
+  const show = !found && !settings.claudeBinary.trim();
+  $("claude-banner").classList.toggle("show", show);
 }
 
 async function confirmSave(): Promise<void> {
@@ -244,11 +256,13 @@ async function init(): Promise<void> {
   $("close-settings").onclick = () => {
     void window.launcher.saveSettings(settings);
     $("backdrop").classList.remove("open");
+    void refreshClaudeStatus();
   };
   $("backdrop").onclick = (e) => {
     if (e.target === $("backdrop")) {
       void window.launcher.saveSettings(settings);
       $("backdrop").classList.remove("open");
+      void refreshClaudeStatus();
     }
   };
   ($("s-wd") as HTMLInputElement).oninput = () => {
@@ -257,12 +271,16 @@ async function init(): Promise<void> {
     composer.wd = v;
     renderPreview();
   };
+  ($("s-claude") as HTMLInputElement).oninput = () => {
+    settings.claudeBinary = ($("s-claude") as HTMLInputElement).value;
+  };
 
   renderDials();
   renderPreview();
   renderPresets();
   renderTerminalSeg();
   syncInputs();
+  void refreshClaudeStatus();
 }
 
 window.addEventListener("DOMContentLoaded", () => {
