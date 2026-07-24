@@ -29,7 +29,7 @@ declare global {
   }
 }
 
-const TERMINALS = ["iTerm", "Terminal", "Ghostty"];
+let availableTerminals: string[] = ["Terminal"]; // filled by detection; Terminal always present
 
 let presets: Preset[] = [];
 let settings: Settings = { terminal: "iTerm", wd: "", cmd: "", claudeBinary: "", models: [], hotkey: "" };
@@ -152,7 +152,10 @@ function renderPresets(): void {
 function renderTerminalSeg(): void {
   const seg = $("seg-terminal");
   seg.innerHTML = "";
-  for (const t of TERMINALS) {
+  if (!availableTerminals.includes(settings.terminal)) {
+    settings.terminal = availableTerminals.includes("Terminal") ? "Terminal" : availableTerminals[0] ?? "Terminal";
+  }
+  for (const t of availableTerminals) {
     seg.appendChild(
       sqBtn(t, settings.terminal === t, () => {
         settings.terminal = t;
@@ -304,6 +307,13 @@ async function init(): Promise<void> {
   }
   composer.wd = settings.wd;
   composer.cmd = "";
+
+  try {
+    availableTerminals = await window.launcher.detectTerminals();
+    if (availableTerminals.length === 0) availableTerminals = ["Terminal"];
+  } catch {
+    availableTerminals = ["Terminal"];
+  }
 
   $("launch").onclick = () => void launch(composed(), "current");
   $("save").onclick = () => openSaveRow();
