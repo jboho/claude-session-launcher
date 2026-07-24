@@ -1,9 +1,11 @@
-import { buildLaunchString } from "../../core/launch-string.js";
+import { buildLaunchString, buildWinLaunchString } from "../../core/launch-string.js";
 import type { LaunchSpec, Settings } from "../../core/types.js";
-import { resolveClaudeCommand } from "../../core/claude-binary.js";
+import { resolveClaudeCommand, resolveClaudeCommandWin } from "../../core/claude-binary.js";
 import { launchMac } from "./macos.js";
+import { launchWin } from "./windows.js";
 
 export type MacLauncher = (launchString: string, terminalApp?: string) => Promise<void>;
+export type WinLauncher = (launchString: string) => Promise<void>;
 
 /**
  * model/mode/effort are passed UNQUOTED into the shell command, so restrict them
@@ -23,17 +25,23 @@ function assertSafeDial(name: string, value: string): void {
 export async function launchSpec(
   spec: LaunchSpec,
   settings: Settings,
-  deps: { platform?: string; launchMac?: MacLauncher } = {},
+  deps: { platform?: string; launchMac?: MacLauncher; launchWin?: WinLauncher } = {},
 ): Promise<void> {
   assertSafeDial("model", spec.model);
   assertSafeDial("mode", spec.mode);
   assertSafeDial("effort", spec.effort);
 
   const platform = deps.platform ?? process.platform;
-  const launchString = buildLaunchString(spec, resolveClaudeCommand(settings.claudeBinary));
   if (platform === "darwin") {
+    const launchString = buildLaunchString(spec, resolveClaudeCommand(settings.claudeBinary));
     await (deps.launchMac ?? launchMac)(launchString, settings.terminal);
     return;
   }
-  throw new Error(`Launching is only implemented on macOS in v1 (platform: ${platform}).`);
+  if (platform === "win32") {
+    // Windows groundwork — see spawn/windows.ts. NOT yet verified on a real Windows machine.
+    const launchString = buildWinLaunchString(spec, resolveClaudeCommandWin(settings.claudeBinary));
+    await (deps.launchWin ?? launchWin)(launchString);
+    return;
+  }
+  throw new Error(`Launching is not implemented on this platform yet (platform: ${platform}).`);
 }
