@@ -1,0 +1,31 @@
+name: Release
+
+# Build & publish an unsigned macOS DMG to a GitHub Release on a version tag.
+# Bump package.json "version", then: git tag vX.Y.Z && git push origin vX.Y.Z
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release-mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Build & publish macOS DMG (unsigned)
+        run: pnpm exec electron-builder --mac --publish always
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Unsigned build — do not attempt to auto-discover a signing identity.
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
