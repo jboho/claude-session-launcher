@@ -26,22 +26,28 @@ first, then Windows) that anyone on the team can install and use.
   - Configurable global hotkey: a recorder control in Settings; default remains Option+W (`Alt+W`); registered from saved settings at startup with a same-key/default fallback, and re-registered live from Settings with honest feedback on which accelerator actually ended up active.
   - Starter presets carry **no hardcoded paths** (done — working dir left blank).
   - *Deferred:* no dedicated model-version-picker UI — the model list still takes free-text aliases/full dated ids, not a curated version selector. `[1m]` bracket context-variants (e.g. `opus[1m]`) are **not** supported — the model-value validator intentionally rejects brackets, since that would require the model token to be quoted in the launch string, which is unimplemented.
+- **#4 — Distribution (internal):**
+  - Real app icon (bolt → `.icns` via electron-builder) and a menu-bar bolt template PNG (`assets/trayTemplate.png` + `@2x`, replacing the old baked-in data-URL).
+  - electron-builder builds an **unsigned macOS DMG** (`Claude-Launcher-<version>-<arch>.dmg`); GitHub Actions run build+test on every PR (`ci.yml`) and publish the DMG to a GitHub Release on a `v*` tag (`release.yml`).
+  - `docs/INSTALL.md` covers download + the Gatekeeper bypass for the unsigned build.
+  - *Deferred:* code signing + Apple notarization (removes the Gatekeeper prompt); auto-update (`electron-updater` needs macOS signing to work); Windows CI artifacts (need the Windows spawner below).
 
 ---
 
-## #4 — Distribution (internal for now)
+## #2 — Windows support (LAST) — groundwork laid; needs a real Windows machine to verify
 
-- **Internal distribution** — share the unsigned build (or push via Jamf/MDM, which can trust it); public code-signing deferred.
-  - *If it goes public later:* Apple notarization (Apple Developer account, ~$99/yr) + a Windows code-signing cert. Without these, Gatekeeper/SmartScreen warn end users.
-- **Auto-update** — electron-updater against a release host (GitHub Releases or an internal channel).
-- **Repo + CI** — remote repo (pending — Jonathan to provide) + README + GitHub Actions building macOS + Windows artifacts on tag.
-- **App icon** — `.icns` (mac) / `.ico` (win) from a 512px+ source; menu-bar icon = user-provided template PNG (~22×22 black-on-transparent + @2x).
+**Groundwork done** (built + unit-tested on macOS, inert behind the `win32` platform switch so the macOS path is unaffected):
 
-## #2 — Windows support (LAST)
+- **Windows-safe launch string** — `buildWinLaunchString` uses PowerShell semantics (`Set-Location '<wd>'; claude …`, `;`-sequenced) with `psQuote` quoting, instead of the POSIX `cd '…' && …` form; `resolveClaudeCommandWin` ps-quotes a configured binary path.
+- **Windows spawner** — `spawn/windows.ts` (`buildWtArgs` + `launchWin`) targets Windows Terminal (`wt`) → PowerShell; `launchSpec` now dispatches `win32` to it.
+- **Windows default hotkey** — `defaultHotkey()` returns `Control+Alt+C` on Windows (Alt+W collides with menu mnemonics there).
 
-- **Terminal spawner** for Windows Terminal (`wt`) / PowerShell — plus a **Windows-safe launch string** (the current POSIX single-quote + `&&` form won't work in cmd/PowerShell; needs a per-OS quoting path). Must be built + verified on a real Windows machine.
+**Still needs a real Windows machine** (unverified / not built):
+
+- Verify the actual `wt` / PowerShell spawn (that a visible window opens; quoting through the shell); build a no-`wt` fallback.
 - **Windows tray icon** — colored `.ico` (Windows tray isn't a template image) and panel positioning for the bottom-right tray.
-- **Windows-appropriate default hotkey** (Alt+W is a poor default there).
+- Windows terminal detection in Settings (current detection is macOS `open -Ra`).
+- CI Windows artifacts + an end-to-end run on Windows.
 - Config paths already handle `%APPDATA%`.
 
 ---

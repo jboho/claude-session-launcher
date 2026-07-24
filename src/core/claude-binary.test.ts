@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { resolveClaudeCommand, buildDetectArgv } from "./claude-binary.js";
+import { resolveClaudeCommand, resolveClaudeCommandWin, buildDetectArgv } from "./claude-binary.js";
 
 describe("resolveClaudeCommand", () => {
   test("blank -> bare claude", () => {
@@ -8,6 +8,19 @@ describe("resolveClaudeCommand", () => {
   });
   test("a path is single-quoted (handles spaces)", () => {
     expect(resolveClaudeCommand("/opt/my tools/claude")).toBe("'/opt/my tools/claude'");
+  });
+});
+
+describe("resolveClaudeCommandWin", () => {
+  test("blank -> bare claude", () => {
+    expect(resolveClaudeCommandWin("")).toBe("claude");
+    expect(resolveClaudeCommandWin("   ")).toBe("claude");
+  });
+  test("a path is ps-quoted (handles spaces)", () => {
+    expect(resolveClaudeCommandWin("C:\\Program Files\\claude.exe")).toBe("'C:\\Program Files\\claude.exe'");
+  });
+  test("escapes embedded single quotes by doubling", () => {
+    expect(resolveClaudeCommandWin("C:\\o'brien\\claude.exe")).toBe("'C:\\o''brien\\claude.exe'");
   });
 });
 

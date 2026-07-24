@@ -15,8 +15,24 @@ describe("launchSpec", () => {
     );
   });
 
-  test("on non-darwin, throws a clear not-implemented error", async () => {
-    await expect(launchSpec(spec, settings, { platform: "win32" })).rejects.toThrow(/only implemented on macOS/);
+  test("on an unsupported platform (linux), throws a clear not-implemented error", async () => {
+    await expect(launchSpec(spec, settings, { platform: "linux" })).rejects.toThrow(/not implemented on this platform/);
+  });
+
+  test("on win32, calls the windows launcher with the PowerShell launch string", async () => {
+    const launchWin = vi.fn().mockResolvedValue(undefined);
+    const winSpec: LaunchSpec = { model: "opus", mode: "auto", effort: "high", wd: "C:\\Code", cmd: "" };
+    await launchSpec(winSpec, settings, { platform: "win32", launchWin });
+    expect(launchWin).toHaveBeenCalledWith(
+      "Set-Location 'C:\\Code'; claude --model opus --permission-mode auto --effort high",
+    );
+  });
+
+  test("win32 still enforces the safe-dial guard and does not launch", async () => {
+    const launchWin = vi.fn().mockResolvedValue(undefined);
+    const evil: LaunchSpec = { ...spec, model: "opus; rm -rf ~" };
+    await expect(launchSpec(evil, settings, { platform: "win32", launchWin })).rejects.toThrow(/[Uu]nsafe model/);
+    expect(launchWin).not.toHaveBeenCalled();
   });
 
   test("rejects a model containing shell metacharacters and does not launch", async () => {
