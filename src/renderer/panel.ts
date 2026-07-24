@@ -30,7 +30,7 @@ declare global {
 const TERMINALS = ["iTerm", "Terminal", "Ghostty"];
 
 let presets: Preset[] = [];
-let settings: Settings = { terminal: "iTerm", wd: "", cmd: "" };
+let settings: Settings = { terminal: "iTerm", wd: "", cmd: "", claudeBinary: "", models: [], hotkey: "" };
 const sel = { model: "opus", mode: "auto", effort: "high" };
 // Transient composer state (per-launch). wd seeds from the settings default; cmd
 // is entered inline before each launch (not persisted).
@@ -215,7 +215,7 @@ async function init(): Promise<void> {
     [presets, settings] = await Promise.all([window.launcher.getPresets(), window.launcher.getSettings()]);
   } catch {
     presets = [];
-    settings = { terminal: "iTerm", wd: "", cmd: "" };
+    settings = { terminal: "iTerm", wd: "", cmd: "", claudeBinary: "", models: [], hotkey: "" };
     toast("Couldn't load saved config — check presets.json / settings.json");
   }
   composer.wd = settings.wd;

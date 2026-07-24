@@ -50,12 +50,17 @@ export interface Preset extends LaunchSpec {
 }
 
 export interface Settings {
-  terminal: string; // "iTerm" | "Terminal" (macOS)
+  terminal: string; // "iTerm" | "Terminal" | "Ghostty" (macOS)
   wd: string; // default working directory for ad-hoc launches
   cmd: string; // default initial command for ad-hoc launches
+  claudeBinary: string; // "" = use bare `claude` on PATH; else an explicit path
+  models: Option[]; // [] / absent = built-in MODELS
+  hotkey: string; // "" / absent = default "Alt+W"
 }
 
-export const DEFAULT_SETTINGS: Settings = { terminal: "iTerm", wd: "", cmd: "" };
+export const DEFAULT_SETTINGS: Settings = {
+  terminal: "iTerm", wd: "", cmd: "", claudeBinary: "", models: [], hotkey: "",
+};
 
 export function emptyPreset(): Preset {
   return { id: "", name: "", model: "", mode: "", effort: "", wd: "", cmd: "" };

@@ -3,7 +3,7 @@ import { launchSpec } from "./index.js";
 import type { LaunchSpec, Settings } from "../../core/types.js";
 
 const spec: LaunchSpec = { model: "opus", mode: "auto", effort: "high", wd: "~/Code", cmd: "" };
-const settings: Settings = { terminal: "iTerm", wd: "", cmd: "" };
+const settings: Settings = { terminal: "iTerm", wd: "", cmd: "", claudeBinary: "", models: [], hotkey: "" };
 
 describe("launchSpec", () => {
   test("on darwin, calls the mac launcher with the built string and terminal", async () => {

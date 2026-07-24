@@ -12,7 +12,9 @@ describe("types", () => {
     expect(emptyPreset()).toEqual({ id: "", name: "", model: "", mode: "", effort: "", wd: "", cmd: "" });
   });
 
-  test("default settings target iTerm with no dir/cmd", () => {
-    expect(DEFAULT_SETTINGS).toEqual({ terminal: "iTerm", wd: "", cmd: "" });
+  test("default settings target iTerm with no dir/cmd and empty generality fields", () => {
+    expect(DEFAULT_SETTINGS).toEqual({
+      terminal: "iTerm", wd: "", cmd: "", claudeBinary: "", models: [], hotkey: "",
+    });
   });
 });
