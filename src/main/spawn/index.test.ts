@@ -35,4 +35,15 @@ describe("launchSpec", () => {
       "iTerm",
     );
   });
+
+  test("uses the configured claude binary path (quoted) in the launch string", async () => {
+    const launchMac = vi.fn().mockResolvedValue(undefined);
+    const withBinary: Settings = { ...settings, claudeBinary: "/opt/my tools/claude" };
+    const ok: LaunchSpec = { ...spec, wd: "", cmd: "" };
+    await launchSpec(ok, withBinary, { platform: "darwin", launchMac });
+    expect(launchMac).toHaveBeenCalledWith(
+      "'/opt/my tools/claude' --model opus --permission-mode auto --effort high",
+      "iTerm",
+    );
+  });
 });

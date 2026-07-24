@@ -1,5 +1,6 @@
 import { buildLaunchString } from "../../core/launch-string.js";
 import type { LaunchSpec, Settings } from "../../core/types.js";
+import { resolveClaudeCommand } from "../../core/claude-binary.js";
 import { launchMac } from "./macos.js";
 
 export type MacLauncher = (launchString: string, terminalApp?: string) => Promise<void>;
@@ -29,7 +30,7 @@ export async function launchSpec(
   assertSafeDial("effort", spec.effort);
 
   const platform = deps.platform ?? process.platform;
-  const launchString = buildLaunchString(spec);
+  const launchString = buildLaunchString(spec, resolveClaudeCommand(settings.claudeBinary));
   if (platform === "darwin") {
     await (deps.launchMac ?? launchMac)(launchString, settings.terminal);
     return;
