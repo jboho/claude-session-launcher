@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { validatePreset } from "./validate.js";
+import { validatePreset, isValidModelValue } from "./validate.js";
 import { emptyPreset } from "./types.js";
 
 const preset = (over = {}) => ({ ...emptyPreset(), ...over });
@@ -29,5 +29,19 @@ describe("validatePreset", () => {
 
   test("known dial values pass", () => {
     expect(validatePreset(preset({ name: "x", model: "opus", mode: "auto", effort: "high" })).valid).toBe(true);
+  });
+});
+
+describe("isValidModelValue", () => {
+  test("accepts aliases and dated ids", () => {
+    expect(isValidModelValue("opus")).toBe(true);
+    expect(isValidModelValue("claude-sonnet-4-5-20250929")).toBe(true);
+    expect(isValidModelValue("fable")).toBe(true);
+  });
+  test("rejects empty and shell-metacharacter values", () => {
+    expect(isValidModelValue("")).toBe(false);
+    expect(isValidModelValue("   ")).toBe(false);
+    expect(isValidModelValue("opus; rm -rf ~")).toBe(false);
+    expect(isValidModelValue("opus[1m]")).toBe(false); // brackets deferred (see spec)
   });
 });
