@@ -1,17 +1,16 @@
 import {
-  MODELS,
   MODES,
   EFFORTS,
   DEFAULT_MODE,
-  isHaiku,
-  HAIKU_BLOCKED_MODES,
+  capabilitiesFor,
+  effectiveModels,
   emptyPreset,
   type LaunchSpec,
   type Preset,
   type Settings,
 } from "../core/types.js";
 import { buildLaunchString } from "../core/launch-string.js";
-import { validatePreset } from "../core/validate.js";
+import { validatePreset, isValidModelValue } from "../core/validate.js";
 
 declare global {
   interface Window {
@@ -56,15 +55,16 @@ function sqBtn(label: string, on: boolean, onclick: () => void, disabled = false
   return b;
 }
 
+function currentModels(): { value: string; label: string }[] {
+  return effectiveModels(settings.models);
+}
+
 function renderDials(): void {
-  // Haiku can't do --effort, nor the autonomous modes (auto/bypass) — grey those out.
-  const haiku = isHaiku(sel.model);
-  if (haiku) {
-    sel.effort = "";
-    if (HAIKU_BLOCKED_MODES.includes(sel.mode)) sel.mode = "";
-  }
+  const caps = capabilitiesFor(sel.model);
+  if (!caps.effort) sel.effort = "";
+  if (caps.blockedModes.includes(sel.mode)) sel.mode = "";
   const groups: [string, { value: string; label: string }[], "model" | "mode" | "effort"][] = [
-    ["g-model", MODELS, "model"],
+    ["g-model", currentModels(), "model"],
     ["g-mode", MODES, "mode"],
     ["g-effort", EFFORTS, "effort"],
   ];
@@ -73,7 +73,7 @@ function renderDials(): void {
     host.innerHTML = "";
     for (const o of options) {
       const disabled =
-        haiku && (key === "effort" || (key === "mode" && HAIKU_BLOCKED_MODES.includes(o.value)));
+        (key === "effort" && !caps.effort) || (key === "mode" && caps.blockedModes.includes(o.value));
       host.appendChild(
         sqBtn(
           o.label,
@@ -161,6 +161,75 @@ function renderTerminalSeg(): void {
       }),
     );
   }
+}
+
+function renderModelEditor(): void {
+  const host = $("model-editor");
+  host.innerHTML = "";
+  currentModels().forEach((m, i) => {
+    const row = document.createElement("div");
+    row.className = "model-row";
+    const val = document.createElement("input");
+    val.value = m.value;
+    val.placeholder = "value (e.g. opus)";
+    const lab = document.createElement("input");
+    lab.value = m.label;
+    lab.placeholder = "label";
+    const rm = document.createElement("button");
+    rm.className = "rm";
+    rm.textContent = "✕";
+    rm.title = "Remove model";
+    val.onchange = () => applyModels();
+    lab.onchange = () => applyModels();
+    rm.onclick = () => {
+      const next = currentModels().slice();
+      next.splice(i, 1);
+      settings.models = next; // may become [] -> effectiveModels falls back to built-ins
+      persistModels();
+    };
+    row.append(val, lab, rm);
+    host.appendChild(row);
+  });
+}
+
+function applyModels(): void {
+  const rows = Array.from($("model-editor").querySelectorAll(".model-row"));
+  const next: { value: string; label: string }[] = [];
+  let bad = false;
+  for (const row of rows) {
+    const inputs = row.querySelectorAll("input");
+    const valEl = inputs[0] as HTMLInputElement;
+    const labEl = inputs[1] as HTMLInputElement;
+    const value = valEl.value.trim();
+    const label = labEl.value.trim() || value;
+    const ok = isValidModelValue(value);
+    valEl.classList.toggle("invalid", !ok);
+    if (!ok) {
+      bad = true;
+      continue;
+    }
+    next.push({ value, label });
+  }
+  if (bad) {
+    toast("Model value must be letters/digits/._- (no spaces or brackets)");
+    return;
+  }
+  settings.models = next;
+  persistModels();
+}
+
+function persistModels(): void {
+  void window.launcher.saveSettings(settings);
+  renderModelEditor();
+  renderDials();
+  renderPreview();
+}
+
+function closeSettings(): void {
+  settings.models = settings.models.filter((m) => isValidModelValue(m.value));
+  void window.launcher.saveSettings(settings);
+  $("backdrop").classList.remove("open");
+  void refreshClaudeStatus();
 }
 
 function syncInputs(): void {
@@ -251,19 +320,12 @@ async function init(): Promise<void> {
   $("open-settings").onclick = () => {
     syncInputs();
     renderTerminalSeg();
+    renderModelEditor();
     $("backdrop").classList.add("open");
   };
-  $("close-settings").onclick = () => {
-    void window.launcher.saveSettings(settings);
-    $("backdrop").classList.remove("open");
-    void refreshClaudeStatus();
-  };
+  $("close-settings").onclick = () => closeSettings();
   $("backdrop").onclick = (e) => {
-    if (e.target === $("backdrop")) {
-      void window.launcher.saveSettings(settings);
-      $("backdrop").classList.remove("open");
-      void refreshClaudeStatus();
-    }
+    if (e.target === $("backdrop")) closeSettings();
   };
   ($("s-wd") as HTMLInputElement).oninput = () => {
     const v = ($("s-wd") as HTMLInputElement).value;
@@ -273,6 +335,10 @@ async function init(): Promise<void> {
   };
   ($("s-claude") as HTMLInputElement).oninput = () => {
     settings.claudeBinary = ($("s-claude") as HTMLInputElement).value;
+  };
+  $("add-model").onclick = () => {
+    settings.models = [...currentModels(), { value: "", label: "" }];
+    renderModelEditor();
   };
 
   renderDials();

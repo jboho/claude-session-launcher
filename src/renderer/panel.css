@@ -118,3 +118,15 @@
     border:1px solid var(--accent); }
   .banner.show { display:block; }
   .banner a { color:var(--accent); font-weight:700; }
+
+  /* Model editor rows in Settings */
+  .model-editor { display:flex; flex-direction:column; gap:6px; }
+  .model-row { display:flex; gap:6px; align-items:center; }
+  .model-row input { flex:1; padding:6px 8px; border:1px solid var(--border); border-radius:7px;
+    background:var(--panel-2); color:var(--text); font:inherit; font-size:12px; }
+  .model-row input.invalid { border-color:#c4314b; outline:1px solid #c4314b; }
+  .model-row .rm { flex:0 0 auto; width:28px; height:30px; border:1px solid var(--border);
+    background:transparent; color:var(--muted); border-radius:7px; cursor:pointer; }
+  .model-row .rm:hover { color:#c4314b; border-color:#c4314b; }
+  .add-model { margin-top:7px; align-self:flex-start; padding:5px 10px; border:1px dashed var(--border);
+    background:transparent; color:var(--accent); border-radius:7px; cursor:pointer; font:inherit; font-size:12px; }
