@@ -39,6 +39,6 @@ Every PR and push to `main` also runs the build + test gate (`.github/workflows/
 To build a DMG locally for testing (no publish):
 
 ```bash
-pnpm dist:mac:dmg     # -> dist/Claude-Launcher-<version>-<arch>.dmg
-pnpm dist:mac         # faster: unpacked .app only (dist/mac/)
+pnpm dist:mac:dmg     # -> release/Claude-Launcher-<version>-<arch>.dmg
+pnpm dist:mac         # faster: unpacked .app only (release/mac-arm64/)
 ```

@@ -18,7 +18,8 @@
     "productName": "Claude Launcher",
     "artifactName": "Claude-Launcher-${version}-${arch}.${ext}",
     "publish": { "provider": "github", "owner": "jboho", "repo": "claude-picker" },
-    "files": ["dist/**", "package.json"],
+    "directories": { "output": "release" },
+    "files": ["dist/**", "!dist/**/*.test.js", "!dist/**/*.test.js.map", "package.json"],
     "mac": {
       "target": "dmg",
       "category": "public.app-category.developer-tools",
