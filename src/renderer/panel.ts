@@ -1,17 +1,18 @@
 import {
-  MODELS,
   MODES,
   EFFORTS,
   DEFAULT_MODE,
-  isHaiku,
-  HAIKU_BLOCKED_MODES,
+  capabilitiesFor,
+  effectiveModels,
   emptyPreset,
   type LaunchSpec,
   type Preset,
   type Settings,
 } from "../core/types.js";
 import { buildLaunchString } from "../core/launch-string.js";
-import { validatePreset } from "../core/validate.js";
+import { validatePreset, isValidModelValue } from "../core/validate.js";
+import { eventToAccelerator } from "../core/accelerator.js";
+import { resolveClaudeCommand } from "../core/claude-binary.js";
 
 declare global {
   interface Window {
@@ -23,14 +24,18 @@ declare global {
       saveSettings(s: Settings): Promise<Settings>;
       launch(spec: LaunchSpec): Promise<void>;
       validateWorkdir(dir: string): Promise<boolean>;
+      detectClaude(): Promise<{ found: boolean; path?: string }>;
+      detectTerminals(): Promise<string[]>;
+      setHotkey(accel: string): Promise<string>;
     };
   }
 }
 
-const TERMINALS = ["iTerm", "Terminal", "Ghostty"];
+let availableTerminals: string[] = ["Terminal"]; // filled by detection; Terminal always present
+let cancelRecording: (() => void) | null = null;
 
 let presets: Preset[] = [];
-let settings: Settings = { terminal: "iTerm", wd: "", cmd: "" };
+let settings: Settings = { terminal: "iTerm", wd: "", cmd: "", claudeBinary: "", models: [], hotkey: "" };
 const sel = { model: "opus", mode: "auto", effort: "high" };
 // Transient composer state (per-launch). wd seeds from the settings default; cmd
 // is entered inline before each launch (not persisted).
@@ -53,15 +58,16 @@ function sqBtn(label: string, on: boolean, onclick: () => void, disabled = false
   return b;
 }
 
+function currentModels(): { value: string; label: string }[] {
+  return effectiveModels(settings.models);
+}
+
 function renderDials(): void {
-  // Haiku can't do --effort, nor the autonomous modes (auto/bypass) — grey those out.
-  const haiku = isHaiku(sel.model);
-  if (haiku) {
-    sel.effort = "";
-    if (HAIKU_BLOCKED_MODES.includes(sel.mode)) sel.mode = "";
-  }
+  const caps = capabilitiesFor(sel.model);
+  if (!caps.effort) sel.effort = "";
+  if (caps.blockedModes.includes(sel.mode)) sel.mode = "";
   const groups: [string, { value: string; label: string }[], "model" | "mode" | "effort"][] = [
-    ["g-model", MODELS, "model"],
+    ["g-model", currentModels(), "model"],
     ["g-mode", MODES, "mode"],
     ["g-effort", EFFORTS, "effort"],
   ];
@@ -70,7 +76,7 @@ function renderDials(): void {
     host.innerHTML = "";
     for (const o of options) {
       const disabled =
-        haiku && (key === "effort" || (key === "mode" && HAIKU_BLOCKED_MODES.includes(o.value)));
+        (key === "effort" && !caps.effort) || (key === "mode" && caps.blockedModes.includes(o.value));
       host.appendChild(
         sqBtn(
           o.label,
@@ -88,7 +94,7 @@ function renderDials(): void {
 }
 
 function renderPreview(): void {
-  $("preview").textContent = buildLaunchString(composed());
+  $("preview").textContent = buildLaunchString(composed(), resolveClaudeCommand(settings.claudeBinary));
 }
 
 function presetEl(p: Preset, plain: boolean): HTMLElement {
@@ -149,7 +155,10 @@ function renderPresets(): void {
 function renderTerminalSeg(): void {
   const seg = $("seg-terminal");
   seg.innerHTML = "";
-  for (const t of TERMINALS) {
+  if (!availableTerminals.includes(settings.terminal)) {
+    settings.terminal = availableTerminals.includes("Terminal") ? "Terminal" : availableTerminals[0] ?? "Terminal";
+  }
+  for (const t of availableTerminals) {
     seg.appendChild(
       sqBtn(t, settings.terminal === t, () => {
         settings.terminal = t;
@@ -160,8 +169,122 @@ function renderTerminalSeg(): void {
   }
 }
 
+function renderModelEditor(): void {
+  const host = $("model-editor");
+  host.innerHTML = "";
+  currentModels().forEach((m, i) => {
+    const row = document.createElement("div");
+    row.className = "model-row";
+    const val = document.createElement("input");
+    val.value = m.value;
+    val.placeholder = "value (e.g. opus)";
+    const lab = document.createElement("input");
+    lab.value = m.label;
+    lab.placeholder = "label";
+    const rm = document.createElement("button");
+    rm.className = "rm";
+    rm.textContent = "✕";
+    rm.title = "Remove model";
+    val.onchange = () => applyModels();
+    lab.onchange = () => applyModels();
+    rm.onclick = () => {
+      const next = currentModels().slice();
+      next.splice(i, 1);
+      settings.models = next; // may become [] -> effectiveModels falls back to built-ins
+      persistModels();
+    };
+    row.append(val, lab, rm);
+    host.appendChild(row);
+  });
+}
+
+function applyModels(): void {
+  const rows = Array.from($("model-editor").querySelectorAll(".model-row"));
+  const next: { value: string; label: string }[] = [];
+  let bad = false;
+  for (const row of rows) {
+    const inputs = row.querySelectorAll("input");
+    const valEl = inputs[0] as HTMLInputElement;
+    const labEl = inputs[1] as HTMLInputElement;
+    const value = valEl.value.trim();
+    const label = labEl.value.trim() || value;
+    const ok = isValidModelValue(value);
+    valEl.classList.toggle("invalid", !ok);
+    if (!ok) {
+      bad = true;
+      continue;
+    }
+    next.push({ value, label });
+  }
+  if (bad) {
+    toast("Model value must be letters/digits/._- (no spaces or brackets)");
+    return;
+  }
+  settings.models = next;
+  persistModels();
+}
+
+function persistModels(): void {
+  void window.launcher.saveSettings(settings);
+  renderModelEditor();
+  renderDials();
+  renderPreview();
+}
+
+function initHotkeyRecorder(): void {
+  const rec = $("hotkey-rec") as HTMLButtonElement;
+  const render = (): void => { rec.textContent = settings.hotkey || "Alt+W"; };
+  render();
+  rec.onclick = () => {
+    cancelRecording?.(); // guard re-entrancy: detach any prior in-progress listener
+    rec.classList.add("recording");
+    rec.textContent = "Press a shortcut…";
+    const cleanup = (): void => {
+      window.removeEventListener("keydown", onKey, true);
+      cancelRecording = null;
+      rec.classList.remove("recording");
+    };
+    const onKey = async (e: KeyboardEvent): Promise<void> => {
+      if (e.key === "Escape") { cleanup(); render(); return; }
+      e.preventDefault();
+      const accel = eventToAccelerator(e);
+      if (!accel) return; // wait for a full chord (modifier + key)
+      cleanup();
+      const active = await window.launcher.setHotkey(accel);
+      settings.hotkey = active;
+      void window.launcher.saveSettings(settings);
+      toast(active === accel
+        ? `Hotkey set to ${accel}`
+        : (active ? `${accel} unavailable — using ${active}` : `${accel} unavailable — no hotkey active`));
+      render();
+    };
+    cancelRecording = cleanup;
+    window.addEventListener("keydown", onKey, true);
+  };
+  ($("hotkey-reset") as HTMLButtonElement).onclick = async () => {
+    const active = await window.launcher.setHotkey("Alt+W");
+    settings.hotkey = active === "Alt+W" ? "" : active;
+    void window.launcher.saveSettings(settings);
+    render();
+    toast(active ? `Hotkey reset to ${active}` : "Alt+W unavailable");
+  };
+  window.addEventListener("blur", () => { cancelRecording?.(); render(); });
+  window.addEventListener("focusin", (e) => {
+    if (cancelRecording && e.target !== rec) { cancelRecording(); render(); }
+  });
+}
+
+function closeSettings(): void {
+  cancelRecording?.();
+  settings.models = settings.models.filter((m) => isValidModelValue(m.value));
+  void window.launcher.saveSettings(settings);
+  $("backdrop").classList.remove("open");
+  void refreshClaudeStatus();
+}
+
 function syncInputs(): void {
   ($("s-wd") as HTMLInputElement).value = settings.wd;
+  ($("s-claude") as HTMLInputElement).value = settings.claudeBinary;
   ($("cmd") as HTMLInputElement).value = composer.cmd;
 }
 
@@ -194,6 +317,17 @@ function closeSaveRow(): void {
   $("save-row").classList.remove("open");
 }
 
+async function refreshClaudeStatus(): Promise<void> {
+  let found = false;
+  try {
+    found = (await window.launcher.detectClaude()).found;
+  } catch {
+    found = false;
+  }
+  const show = !found && !settings.claudeBinary.trim();
+  $("claude-banner").classList.toggle("show", show);
+}
+
 async function confirmSave(): Promise<void> {
   const input = $("save-name") as HTMLInputElement;
   const name = input.value.trim();
@@ -215,11 +349,25 @@ async function init(): Promise<void> {
     [presets, settings] = await Promise.all([window.launcher.getPresets(), window.launcher.getSettings()]);
   } catch {
     presets = [];
-    settings = { terminal: "iTerm", wd: "", cmd: "" };
+    settings = { terminal: "iTerm", wd: "", cmd: "", claudeBinary: "", models: [], hotkey: "" };
     toast("Couldn't load saved config — check presets.json / settings.json");
   }
   composer.wd = settings.wd;
   composer.cmd = "";
+
+  try {
+    availableTerminals = await window.launcher.detectTerminals();
+    if (availableTerminals.length === 0) availableTerminals = ["Terminal"];
+  } catch {
+    availableTerminals = ["Terminal"];
+  }
+
+  if (!availableTerminals.includes(settings.terminal)) {
+    settings.terminal = availableTerminals.includes("Terminal")
+      ? "Terminal"
+      : (availableTerminals[0] ?? "Terminal");
+    void window.launcher.saveSettings(settings);
+  }
 
   $("launch").onclick = () => void launch(composed(), "current");
   $("save").onclick = () => openSaveRow();
@@ -236,17 +384,12 @@ async function init(): Promise<void> {
   $("open-settings").onclick = () => {
     syncInputs();
     renderTerminalSeg();
+    renderModelEditor();
     $("backdrop").classList.add("open");
   };
-  $("close-settings").onclick = () => {
-    void window.launcher.saveSettings(settings);
-    $("backdrop").classList.remove("open");
-  };
+  $("close-settings").onclick = () => closeSettings();
   $("backdrop").onclick = (e) => {
-    if (e.target === $("backdrop")) {
-      void window.launcher.saveSettings(settings);
-      $("backdrop").classList.remove("open");
-    }
+    if (e.target === $("backdrop")) closeSettings();
   };
   ($("s-wd") as HTMLInputElement).oninput = () => {
     const v = ($("s-wd") as HTMLInputElement).value;
@@ -254,12 +397,22 @@ async function init(): Promise<void> {
     composer.wd = v;
     renderPreview();
   };
+  ($("s-claude") as HTMLInputElement).oninput = () => {
+    settings.claudeBinary = ($("s-claude") as HTMLInputElement).value;
+    renderPreview();
+  };
+  $("add-model").onclick = () => {
+    settings.models = [...currentModels(), { value: "", label: "" }];
+    renderModelEditor();
+  };
 
   renderDials();
   renderPreview();
   renderPresets();
   renderTerminalSeg();
   syncInputs();
+  void refreshClaudeStatus();
+  initHotkeyRecorder();
 }
 
 window.addEventListener("DOMContentLoaded", () => {

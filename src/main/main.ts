@@ -3,6 +3,8 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { registerIpc } from "./ipc.js";
 import { ensureSeedPresets } from "./seed.js";
+import { loadSettings } from "../core/settings.js";
+import { hotkeyCandidates } from "./hotkey.js";
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -17,6 +19,25 @@ const TRAY_ICON_DATA_URL =
 
 let tray: Tray | null = null;
 let panel: BrowserWindow | null = null;
+let activeHotkey = "";
+
+/** (Re)register the global hotkey. Returns the accelerator that actually ended up active ("" if none). */
+function setHotkey(preferred: string): string {
+  const prev = activeHotkey;
+  globalShortcut.unregisterAll();
+  for (const hk of hotkeyCandidates(preferred, prev)) {
+    try {
+      if (globalShortcut.register(hk, () => togglePanel())) {
+        activeHotkey = hk;
+        return hk;
+      }
+    } catch {
+      // malformed accelerator string — treat as a failed registration, try the next candidate
+    }
+  }
+  activeHotkey = "";
+  return "";
+}
 
 function createPanel(): BrowserWindow {
   const win = new BrowserWindow({
@@ -78,7 +99,7 @@ app.whenReady().then(async () => {
   // Dock icon kept visible on purpose: on machines where the menu-bar tray icon
   // is hidden (notch / menu-bar managers), the Dock icon is a reliable way to
   // reopen the panel.
-  registerIpc();
+  registerIpc({ setHotkey });
   panel = createPanel();
 
   const icon = nativeImage.createFromDataURL(TRAY_ICON_DATA_URL);
@@ -95,16 +116,10 @@ app.whenReady().then(async () => {
   tray.on("click", () => togglePanel());
   tray.on("right-click", () => tray?.popUpContextMenu(menu));
 
-  // Global hotkey to summon the panel from anywhere. First that registers wins.
-  const HOTKEYS = ["Alt+W"]; // Option+W
-  let hotkey = "";
-  for (const hk of HOTKEYS) {
-    if (globalShortcut.register(hk, () => togglePanel())) {
-      hotkey = hk;
-      break;
-    }
-  }
-  console.log(`[launcher] global hotkey: ${hotkey || "NONE (all candidates were taken)"}`);
+  // Global hotkey from settings, falling back to the default then to none.
+  const startupSettings = await loadSettings();
+  setHotkey(startupSettings.hotkey);
+  console.log(`[launcher] global hotkey: ${activeHotkey || "NONE (all candidates were taken)"}`);
 
   // Show once on launch so the panel is immediately visible.
   positionAndShow();

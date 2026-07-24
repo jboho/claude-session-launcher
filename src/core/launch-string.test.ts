@@ -34,4 +34,13 @@ describe("buildLaunchString", () => {
     expect(buildLaunchString(spec({ model: "opus", wd: "/Users/me/My Code" })))
       .toBe("cd '/Users/me/My Code' && claude --model opus");
   });
+
+  test("uses a supplied claude command token in place of bare claude", () => {
+    expect(buildLaunchString(spec({ model: "opus", wd: "~/Code" }), "'/opt/tools/claude'"))
+      .toBe("cd '~/Code' && '/opt/tools/claude' --model opus");
+  });
+
+  test("defaults to bare claude when no token is given", () => {
+    expect(buildLaunchString(spec({ model: "sonnet" }))).toBe("claude --model sonnet");
+  });
 });

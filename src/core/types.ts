@@ -27,6 +27,22 @@ export function isHaiku(model: string): boolean {
 /** Autonomous permission modes are gated to capable models — Haiku rejects them. */
 export const HAIKU_BLOCKED_MODES = ["auto"];
 
+export interface ModelCapabilities {
+  effort: boolean; // model supports --effort
+  blockedModes: string[]; // permission modes the model rejects
+}
+
+/** Capabilities for a model value. Known families are restricted; unknown models are unrestricted. */
+export function capabilitiesFor(model: string): ModelCapabilities {
+  if (isHaiku(model)) return { effort: false, blockedModes: HAIKU_BLOCKED_MODES };
+  return { effort: true, blockedModes: [] };
+}
+
+/** The model list to show: the user's configured list, or the built-in defaults when empty/invalid. */
+export function effectiveModels(models: Option[] | undefined): Option[] {
+  return Array.isArray(models) && models.length > 0 ? models : MODELS;
+}
+
 export const EFFORTS: Option[] = [
   { value: "low", label: "Low" },
   { value: "medium", label: "Med" },
@@ -50,12 +66,17 @@ export interface Preset extends LaunchSpec {
 }
 
 export interface Settings {
-  terminal: string; // "iTerm" | "Terminal" (macOS)
+  terminal: string; // "iTerm" | "Terminal" | "Ghostty" (macOS)
   wd: string; // default working directory for ad-hoc launches
   cmd: string; // default initial command for ad-hoc launches
+  claudeBinary: string; // "" = use bare `claude` on PATH; else an explicit path
+  models: Option[]; // [] / absent = built-in MODELS
+  hotkey: string; // "" / absent = default "Alt+W"
 }
 
-export const DEFAULT_SETTINGS: Settings = { terminal: "iTerm", wd: "", cmd: "" };
+export const DEFAULT_SETTINGS: Settings = {
+  terminal: "iTerm", wd: "", cmd: "", claudeBinary: "", models: [], hotkey: "",
+};
 
 export function emptyPreset(): Preset {
   return { id: "", name: "", model: "", mode: "", effort: "", wd: "", cmd: "" };

@@ -9,4 +9,7 @@ contextBridge.exposeInMainWorld("launcher", {
   saveSettings: (s: Settings): Promise<Settings> => ipcRenderer.invoke("settings:save", s),
   launch: (spec: LaunchSpec): Promise<void> => ipcRenderer.invoke("launch", spec),
   validateWorkdir: (dir: string): Promise<boolean> => ipcRenderer.invoke("validate-workdir", dir),
+  detectClaude: (): Promise<{ found: boolean; path?: string }> => ipcRenderer.invoke("claude:detect"),
+  detectTerminals: (): Promise<string[]> => ipcRenderer.invoke("terminals:detect"),
+  setHotkey: (accel: string): Promise<string> => ipcRenderer.invoke("hotkey:set", accel),
 });

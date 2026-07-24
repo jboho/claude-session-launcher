@@ -3,7 +3,7 @@ import { launchSpec } from "./index.js";
 import type { LaunchSpec, Settings } from "../../core/types.js";
 
 const spec: LaunchSpec = { model: "opus", mode: "auto", effort: "high", wd: "~/Code", cmd: "" };
-const settings: Settings = { terminal: "iTerm", wd: "", cmd: "" };
+const settings: Settings = { terminal: "iTerm", wd: "", cmd: "", claudeBinary: "", models: [], hotkey: "" };
 
 describe("launchSpec", () => {
   test("on darwin, calls the mac launcher with the built string and terminal", async () => {
@@ -32,6 +32,17 @@ describe("launchSpec", () => {
     await launchSpec(ok, settings, { platform: "darwin", launchMac });
     expect(launchMac).toHaveBeenCalledWith(
       "claude --model claude-haiku-4-5-20251001 --permission-mode auto --effort high",
+      "iTerm",
+    );
+  });
+
+  test("uses the configured claude binary path (quoted) in the launch string", async () => {
+    const launchMac = vi.fn().mockResolvedValue(undefined);
+    const withBinary: Settings = { ...settings, claudeBinary: "/opt/my tools/claude" };
+    const ok: LaunchSpec = { ...spec, wd: "", cmd: "" };
+    await launchSpec(ok, withBinary, { platform: "darwin", launchMac });
+    expect(launchMac).toHaveBeenCalledWith(
+      "'/opt/my tools/claude' --model opus --permission-mode auto --effort high",
       "iTerm",
     );
   });

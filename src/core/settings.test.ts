@@ -23,12 +23,17 @@ describe("settings", () => {
   test("partial file merges over defaults", async () => {
     const f = await tmpFile();
     await fs.writeFile(f, JSON.stringify({ wd: "~/Code" }), "utf8");
-    expect(await loadSettings(f)).toEqual({ terminal: "iTerm", wd: "~/Code", cmd: "" });
+    expect(await loadSettings(f)).toEqual({
+      terminal: "iTerm", wd: "~/Code", cmd: "", claudeBinary: "", models: [], hotkey: "",
+    });
   });
 
   test("save then load round-trips", async () => {
     const f = await tmpFile();
-    const s = { terminal: "Terminal", wd: "/tmp", cmd: "/pr-queue" };
+    const s = {
+      terminal: "Terminal", wd: "/tmp", cmd: "/pr-queue",
+      claudeBinary: "/usr/local/bin/claude", models: [{ value: "fable", label: "Fable" }], hotkey: "Control+Alt+C",
+    };
     await saveSettings(s, f);
     expect(await loadSettings(f)).toEqual(s);
   });
