@@ -23,6 +23,9 @@ declare global {
       saveSettings(s: Settings): Promise<Settings>;
       launch(spec: LaunchSpec): Promise<void>;
       validateWorkdir(dir: string): Promise<boolean>;
+      detectClaude(): Promise<{ found: boolean; path?: string }>;
+      detectTerminals(): Promise<string[]>;
+      setHotkey(accel: string): Promise<boolean>;
     };
   }
 }
