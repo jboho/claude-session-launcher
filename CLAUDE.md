@@ -123,7 +123,7 @@ Release cadence: none yet (no tags; `0.1.0` unreleased).
 ## Operational Knowledge
 
 - **ESM preload must be `.mjs`** — Electron silently won't load a `.js` ESM preload; `copy-assets.mjs` renames it. Needs `sandbox:false`.
-- **Tray needs a real image** — an empty `nativeImage` = invisible zero-width status item. Tray icon loads from `dist/assets/trayTemplate.png` (+`@2x`), `setTemplateImage(true)` (macOS tints it). A notch / menu-bar manager can still hide it → Dock icon + global hotkey (⌥W default) are the reliable fallbacks.
+- **Tray needs a real image** — an empty `nativeImage` = invisible zero-width status item. Tray icon loads from `dist/assets/trayTemplate.png` (+`@2x`), `setTemplateImage(true)` (macOS tints it). The app is menu-bar-only (`app.dock.hide()` + `LSUIElement: true` in the packaged Info.plist) — if a notch/menu-bar manager hides the tray icon, the global hotkey (⌥W default) is the only fallback to reopen the panel.
 - **electron-builder DMG build** can fail with `rename …/Electron → Claude Launcher ENOENT` on a partial Electron cache → `rm -rf ~/Library/Caches/electron ~/Library/Caches/electron-builder` and rebuild. The `hdiutil detach … code 8` retry warning is benign.
 - **This dev environment:** `gh`'s API times out reaching `api.github.com` → open PRs via the GitHub MCP; SSH `git push` needs the sandbox disabled.
 - **Claude Code launch surface** (drives the dials): `claude --model <alias|id> --permission-mode <plan|auto|acceptEdits|manual|default> --effort <low|medium|high|xhigh|max>`. **Haiku** rejects `--effort` and the autonomous modes (`auto`); the UI greys those out. `bypassPermissions` is org-locked (MDM) and removed from the UI. No `--fast` launch flag (fast is the in-session `/fast` toggle).

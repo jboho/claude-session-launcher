@@ -96,9 +96,7 @@ function togglePanel(): void {
 
 app.whenReady().then(async () => {
   await ensureSeedPresets();
-  // Dock icon kept visible on purpose: on machines where the menu-bar tray icon
-  // is hidden (notch / menu-bar managers), the Dock icon is a reliable way to
-  // reopen the panel.
+  app.dock?.hide();
   registerIpc({ setHotkey });
   panel = createPanel();
 
