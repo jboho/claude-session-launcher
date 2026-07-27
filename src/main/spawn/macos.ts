@@ -14,17 +14,33 @@ export function buildMacScript(launchString: string, terminalApp: string): strin
     return ['tell application "Terminal"', "  activate", `  do script ${osaQuote(launchString)}`, "end tell"];
   }
   // Default: iTerm — open a new tab in the current window, or a new window if none.
+  //
+  // Two iTerm quirks make the obvious script unreliable, both verified against iTerm 3.x:
+  //  1. `current window` is `missing value` when iTerm has no key window (cold start, or
+  //     coming forward right after `activate`) — reading it fails with "Can't get current
+  //     window. (-1728)". So never re-derive it after creating; use what `create …` returns.
+  //  2. `create tab with default profile` returns `missing value` (it does not error) when
+  //     the target window is hidden or minimized, so the tab path can fail even with a
+  //     perfectly valid window reference.
+  // Hence: attempt the tab, and treat anything that does not yield a session as "open a
+  // new window" rather than trusting either reference.
   return [
     'tell application "iTerm"',
     "  activate",
-    "  if (count of windows) = 0 then",
-    "    create window with default profile",
-    "  else",
-    "    tell current window to create tab with default profile",
+    "  set targetSession to missing value",
+    "  try",
+    "    set targetWindow to current window",
+    "    if targetWindow is not missing value then",
+    "      tell targetWindow to set newTab to (create tab with default profile)",
+    "      if newTab is not missing value then set targetSession to current session of newTab",
+    "    end if",
+    "  end try",
+    "  if targetSession is missing value then",
+    "    set newWindow to (create window with default profile)",
+    '    if newWindow is missing value then error "iTerm could not open a new window."',
+    "    set targetSession to current session of newWindow",
     "  end if",
-    "  tell current session of current window",
-    `    write text ${osaQuote(launchString)}`,
-    "  end tell",
+    `  tell targetSession to write text ${osaQuote(launchString)}`,
     "end tell",
   ];
 }
