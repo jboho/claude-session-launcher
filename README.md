@@ -7,7 +7,7 @@ preselected — and lets you save named presets for one-click launch.
 ## Install (macOS)
 
 Download the latest **`Claude-Launcher-<version>-<arch>.dmg`** from the
-[Releases page](https://github.com/jboho/claude-picker/releases), drag it into
+[Releases page](https://github.com/jboho/claude-session-launcher/releases), drag it into
 Applications, and get past Gatekeeper on first launch (the build is unsigned) — right-click →
 Open, or `xattr -dr com.apple.quarantine "/Applications/Claude Launcher.app"`. Full steps and
 the maintainer release flow are in [docs/INSTALL.md](docs/INSTALL.md).

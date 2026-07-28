@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "main": "dist/main/main.js",
-  "repository": "github:jboho/claude-picker",
+  "repository": "github:jboho/claude-session-launcher",
   "scripts": {
     "build": "tsc && node scripts/copy-assets.mjs",
     "start": "pnpm build && electron .",
@@ -17,7 +17,7 @@
     "appId": "com.jboho.claude-launcher",
     "productName": "Claude Launcher",
     "artifactName": "Claude-Launcher-${version}-${arch}.${ext}",
-    "publish": { "provider": "github", "owner": "jboho", "repo": "claude-picker" },
+    "publish": { "provider": "github", "owner": "jboho", "repo": "claude-session-launcher" },
     "directories": { "output": "release" },
     "files": ["dist/**", "!dist/**/*.test.js", "!dist/**/*.test.js.map", "package.json"],
     "mac": {

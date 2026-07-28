@@ -5,7 +5,7 @@ Internal, unsigned builds. macOS only for now.
 ## Install
 
 1. Download the latest **`Claude-Launcher-<version>-<arch>.dmg`** from the
-   [Releases page](https://github.com/jboho/claude-picker/releases).
+   [Releases page](https://github.com/jboho/claude-session-launcher/releases).
    (`arm64` for Apple Silicon; `x64` for Intel.)
 2. Open the DMG and drag **Claude Launcher** into **Applications**.
 3. **First launch — get past Gatekeeper.** The build isn't code-signed yet, so macOS
