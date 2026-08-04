@@ -10,7 +10,8 @@ and an inline command/prompt) preselected, via a button-panel UI with saved pres
 writes a shell command into your terminal — it does not embed the CLI. macOS is the working
 platform; Windows support is groundwork-only (unverified). Local dir and GitHub repo both
 `claude-session-launcher` (`jboho/claude-session-launcher`; renamed from `claude-picker`
-on 2026-07-28 — GitHub redirects the old name).
+on 2026-07-28, and re-homed from the `jboho` account to `jboho` on 2026-08-04 with
+history rewritten to a single identity).
 _(Source: README.md, ROADMAP.md, package.json)_
 
 ## Tech Stack
@@ -21,7 +22,7 @@ _(Source: README.md, ROADMAP.md, package.json)_
 | Runtime/Shell | Electron | ^33 | bundles Node 20 → `@types/node` pinned `^20` |
 | Test runner | Vitest | ^2.1 | colocated `*.test.ts`; `pnpm test` = `vitest run` |
 | Build | `tsc` + `scripts/copy-assets.mjs` | — | copy-assets copies renderer HTML/CSS + `assets/` into `dist/`, and renames the ESM preload to `.mjs` |
-| Packaging | electron-builder | ^25.1.8 | unsigned macOS DMG; app icon derived from `build/icon.png` |
+| Packaging | electron-builder | ^25.1.8 | macOS DMG signed with Developer ID (Team `72FBK9YTA3`), hardened runtime; app icon derived from `build/icon.png` |
 | Package manager | pnpm | 10.33 | lockfile 9.0; use `command pnpm` (a shell `pnpm` wrapper misbehaves non-interactively) |
 | CI | GitHub Actions | — | `ci.yml` (build+test), `release.yml` (tagged DMG) |
 
@@ -65,7 +66,8 @@ migrate silently.
 
 ## Deployment Pipeline
 
-Distribution = an **unsigned macOS DMG on GitHub Releases**. No servers.
+Distribution = a **macOS DMG on GitHub Releases**. No servers. Local builds are
+**signed** with Developer ID; CI builds remain unsigned (no cert on the runner).
 
 - **`ci.yml`** — on PRs + pushes to `main`: ubuntu, pnpm 10.33 / Node 20, `pnpm install
   --frozen-lockfile` → `pnpm build` → `pnpm test`. The merge gate.
@@ -78,12 +80,27 @@ Distribution = an **unsigned macOS DMG on GitHub Releases**. No servers.
 **Release flow:** bump `version` in `package.json` → commit → `git tag vX.Y.Z && git push
 origin vX.Y.Z` → CI publishes. (No release cut yet; version is `0.1.0`.)
 
-**Install (unsigned):** download the DMG → drag to Applications → clear Gatekeeper
-(`xattr -dr com.apple.quarantine "/Applications/Claude Launcher.app"` or right-click→Open).
-See `docs/INSTALL.md`. A **locally-built** `.app` carries no quarantine flag, so it opens
-Gatekeeper-free — only a *downloaded* DMG is flagged.
+**Install:** download the DMG → drag to Applications. See `docs/INSTALL.md`. A
+**locally-built** `.app` carries no quarantine flag, so it opens Gatekeeper-free; a
+*downloaded* DMG is flagged and — until notarization is enabled — still needs
+right-click→Open or `xattr -dr com.apple.quarantine`.
 
-<!-- FILL IN: Code signing + Apple notarization decision & timeline (currently deferred); the internal distribution channel (direct DMG vs Jamf/MDM push) and its audience. -->
+**Code signing (2026-08-04).** Local builds sign automatically via keychain auto-discovery
+of the `Developer ID Application: Jonathan Boho (72FBK9YTA3)` cert (valid to 2027-02-01);
+`hardenedRuntime: true`, entitlements in `build/entitlements.mac.plist`. `identity: null`
+was removed from the mac config — CI stays unsigned because `release.yml` sets
+`CSC_IDENTITY_AUTO_DISCOVERY=false`, so that flag is now load-bearing.
+
+**Notarization is NOT enabled** (`mac.notarize: false`) — no stored credentials. Enabling it
+needs `xcrun notarytool store-credentials` with an app-specific password, after which
+`spctl -a` flips from `rejected (Unnotarized Developer ID)` to `accepted`. Signing alone does
+not satisfy Gatekeeper for downloaded apps; it only fixes the *identity stability* problem.
+
+**Why signing mattered here:** the app's Automation (Apple Events) TCC grant is keyed to the
+code signature. Unsigned builds got a new identity per build, so macOS re-prompted for
+"control iTerm" every install. A stable Developer ID makes the grant persist.
+
+<!-- FILL IN: the internal distribution channel (direct DMG vs Jamf/MDM push) and its audience. -->
 
 ## Infrastructure
 

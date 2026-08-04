@@ -24,9 +24,14 @@
       "target": "dmg",
       "category": "public.app-category.developer-tools",
       "icon": "build/icon.png",
-      "identity": null,
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.inherit.plist",
+      "notarize": false,
       "extendInfo": {
-        "LSUIElement": true
+        "LSUIElement": true,
+        "NSAppleEventsUsageDescription": "Claude Launcher opens a tab in your terminal (Terminal, iTerm, or Ghostty) and types the claude command you configured."
       }
     }
   },
