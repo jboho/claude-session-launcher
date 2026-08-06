@@ -4,7 +4,6 @@
   "description": "Panel window permissions",
   "windows": ["panel"],
   "permissions": [
-    "core:default",
     "opener:allow-open-url",
     "global-shortcut:default"
   ]
