@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "main": "dist/main/main.js",
+  "description": "A macOS menu-bar widget that launches Claude Code CLI sessions in your terminal with model, permission mode, and effort preselected.",
+  "license": "Apache-2.0",
+  "author": "Jonathan Boho",
   "repository": "github:jboho/claude-session-launcher",
   "scripts": {
     "build": "tsc && node scripts/copy-assets.mjs",

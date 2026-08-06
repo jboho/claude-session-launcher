@@ -14,10 +14,12 @@ the maintainer release flow are in [docs/INSTALL.md](docs/INSTALL.md).
 
 ## Develop
 
+Requires Node 20+ and [pnpm](https://pnpm.io).
+
 ```bash
-command pnpm install
-command pnpm test      # unit tests (Vitest)
-command pnpm start     # build + launch the app
+pnpm install
+pnpm test      # unit tests (Vitest)
+pnpm start     # build + launch the app
 ```
 
 ## Config (portable)
@@ -40,3 +42,8 @@ installed on the machine are offered (iTerm, Apple Terminal, Ghostty — Apple
 Terminal is always available); the launcher falls back to Apple Terminal.
 Windows/Linux report "not implemented in v1" — the spawner is the only
 platform-specific piece.
+
+## License
+
+[Apache-2.0](LICENSE). Not affiliated with or endorsed by Anthropic; it launches the
+`claude` CLI, which you install and license separately.
