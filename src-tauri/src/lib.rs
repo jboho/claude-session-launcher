@@ -1,5 +1,6 @@
 pub mod applescript;
 pub mod launch;
+pub mod position;
 pub mod types;
 
 pub fn run() {
