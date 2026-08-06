@@ -15,8 +15,11 @@
      width, which cascades into a second, horizontal bar. Scrolling belongs to .win / .sheet. */
   /* Padding here rather than a margin on .win: a top margin would collapse through body and
      offset the whole document, overflowing by exactly its own height. 10px sides keeps the
-     400px card fitting the 420px window exactly. */
-  body { margin:0; padding:14px 10px; overflow:hidden; display:flex; justify-content:center; align-items:flex-start;
+     440px card fitting the 460px window exactly. */
+  /* align-items:stretch — the card fills the window's height rather than hugging its content,
+     so the slack the window carries for the transient rows (not-found banner, save-preset row)
+     sits inside the card as empty lane space instead of showing as a dead band of --bg. */
+  body { margin:0; padding:14px 10px; overflow:hidden; display:flex; justify-content:center; align-items:stretch;
     font:13px/1.35 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
     color:var(--text); background:var(--bg); }
 
@@ -27,7 +30,7 @@
   ::-webkit-scrollbar-thumb:hover { background:var(--muted); }
   ::-webkit-scrollbar-corner { background:transparent; }
 
-  .win { width:400px; flex:0 0 auto; padding:12px 13px 16px; background:var(--panel);
+  .win { width:440px; flex:0 0 auto; padding:12px 13px 16px; background:var(--panel);
     border:1px solid var(--border); border-radius:14px; box-shadow:0 10px 34px rgba(0,0,0,.18);
     max-height:100%; overflow-y:auto; overflow-x:hidden; }
   .titlebar { display:flex; align-items:center; justify-content:space-between; padding:1px 1px 11px;
