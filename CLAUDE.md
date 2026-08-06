@@ -4,14 +4,13 @@
 
 ## Overview
 
-A personal → internal **Electron menu-bar/dock widget** that launches `claude`
+An open-source **Electron menu-bar/dock widget** that launches `claude`
 CLI sessions in a terminal with **model · permission-mode · effort** (plus working directory
 and an inline command/prompt) preselected, via a button-panel UI with saved presets. It
 writes a shell command into your terminal — it does not embed the CLI. macOS is the working
 platform; Windows support is groundwork-only (unverified). Local dir and GitHub repo both
 `claude-session-launcher` (`jboho/claude-session-launcher`; renamed from `claude-picker`
-on 2026-07-28, and re-homed from the `jboho` account to `jboho` on 2026-08-04 with
-history rewritten to a single identity).
+on 2026-07-28). Licensed Apache-2.0.
 _(Source: README.md, ROADMAP.md, package.json)_
 
 ## Tech Stack
@@ -135,7 +134,7 @@ Roadmap in `ROADMAP.md`. All three post-v1 buckets are merged to `main`:
 - **#4 distribution** (PR #2) — icons, unsigned DMG, CI + release workflows.
 - **#2 Windows** (PR #3) — **groundwork only**, unit-tested behind the `win32` switch, **not verified on a real Windows machine**.
 
-Contributors: Jonathan Boho (46 commits) + `jboho` (3, same person's personal account).
+Contributors: Jonathan Boho (sole author).
 Release cadence: none yet (no tags; `0.1.0` unreleased).
 
 ## Operational Knowledge
