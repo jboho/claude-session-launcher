@@ -1,5 +1,6 @@
 pub mod applescript;
 pub mod config;
+pub mod detect;
 pub mod hotkey;
 pub mod launch;
 pub mod position;
