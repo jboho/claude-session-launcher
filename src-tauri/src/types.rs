@@ -18,6 +18,54 @@ fn default_terminal() -> String {
     "iTerm".to_string()
 }
 
+/// Deserialize the `terminal` field, falling back to the default for any missing,
+/// non-string, or blank value. Mirrors normalizeSettings's `withDefault` in
+/// src/core/normalize.ts.
+fn lenient_terminal<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = serde_json::Value::deserialize(deserializer)?;
+    Ok(match value {
+        serde_json::Value::String(s) if !s.is_empty() => s,
+        _ => default_terminal(),
+    })
+}
+
+/// Deserialize `models`, reproducing normalizeModels in src/core/normalize.ts exactly:
+/// a non-array `models` yields [], non-object entries are skipped, entries without a
+/// usable (non-empty string) `value` are dropped, and a missing/non-string/blank
+/// `label` falls back to `value`. A malformed entry must never fail the whole
+/// Settings load.
+fn lenient_models<'de, D>(deserializer: D) -> Result<Vec<ModelOption>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = serde_json::Value::deserialize(deserializer)?;
+    let entries = match value {
+        serde_json::Value::Array(a) => a,
+        _ => return Ok(Vec::new()),
+    };
+
+    let mut out = Vec::new();
+    for entry in entries {
+        let obj = match entry {
+            serde_json::Value::Object(o) => o,
+            _ => continue,
+        };
+        let value = match obj.get("value") {
+            Some(serde_json::Value::String(s)) if !s.is_empty() => s.clone(),
+            _ => continue,
+        };
+        let label = match obj.get("label") {
+            Some(serde_json::Value::String(s)) if !s.is_empty() => s.clone(),
+            _ => value.clone(),
+        };
+        out.push(ModelOption { value, label });
+    }
+    Ok(out)
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ModelOption {
     #[serde(default, deserialize_with = "lenient_string")]
@@ -29,7 +77,7 @@ pub struct ModelOption {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
-    #[serde(default = "default_terminal", deserialize_with = "lenient_string")]
+    #[serde(default = "default_terminal", deserialize_with = "lenient_terminal")]
     pub terminal: String,
     #[serde(default, deserialize_with = "lenient_string")]
     pub wd: String,
@@ -37,7 +85,7 @@ pub struct Settings {
     pub cmd: String,
     #[serde(default, deserialize_with = "lenient_string")]
     pub claude_binary: String,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "lenient_models")]
     pub models: Vec<ModelOption>,
     #[serde(default, deserialize_with = "lenient_string")]
     pub hotkey: String,
@@ -136,5 +184,88 @@ mod tests {
             "expected serialized Settings to contain \"claudeBinary\", got: {json}"
         );
         assert!(!json.contains("claude_binary"));
+    }
+
+    // Mirrors src/core/normalize.ts normalizeModels: a bad model entry must not fail
+    // the whole Settings load, and entries without a usable `value` are dropped.
+
+    #[test]
+    fn non_object_model_entry_does_not_fail_the_load() {
+        let s: Settings =
+            serde_json::from_str(r#"{"models":[42,{"value":"opus","label":"Opus"}]}"#).unwrap();
+        assert_eq!(s.models.len(), 1);
+        assert_eq!(s.models[0].value, "opus");
+        assert_eq!(s.models[0].label, "Opus");
+    }
+
+    #[test]
+    fn null_and_string_model_entries_are_skipped() {
+        let s: Settings =
+            serde_json::from_str(r#"{"models":[null,"not an object",{"value":"sonnet"}]}"#).unwrap();
+        assert_eq!(s.models.len(), 1);
+        assert_eq!(s.models[0].value, "sonnet");
+    }
+
+    #[test]
+    fn entry_with_no_value_is_dropped() {
+        let s: Settings = serde_json::from_str(r#"{"models":[{"label":"Foo"}]}"#).unwrap();
+        assert_eq!(s.models.len(), 0);
+    }
+
+    #[test]
+    fn entry_with_blank_value_is_dropped() {
+        let s: Settings =
+            serde_json::from_str(r#"{"models":[{"value":"","label":"Foo"}]}"#).unwrap();
+        assert_eq!(s.models.len(), 0);
+    }
+
+    #[test]
+    fn missing_label_falls_back_to_value() {
+        let s: Settings = serde_json::from_str(r#"{"models":[{"value":"sonnet"}]}"#).unwrap();
+        assert_eq!(s.models.len(), 1);
+        assert_eq!(s.models[0].value, "sonnet");
+        assert_eq!(s.models[0].label, "sonnet");
+    }
+
+    #[test]
+    fn models_that_is_not_an_array_yields_empty_list() {
+        let s: Settings = serde_json::from_str(r#"{"models":{"value":"opus"}}"#).unwrap();
+        assert_eq!(s.models.len(), 0);
+    }
+
+    #[test]
+    fn keeps_only_well_formed_model_entries() {
+        // Matches src/core/normalize.test.ts "keeps only well-formed model entries".
+        let s: Settings = serde_json::from_str(
+            r#"{"models":[
+                {"value":"opus","label":"Opus"},
+                {"value":1,"label":"bad value"},
+                {"value":"sonnet"},
+                "not an object",
+                null
+            ]}"#,
+        )
+        .unwrap();
+        assert_eq!(
+            s.models,
+            vec![
+                ModelOption { value: "opus".to_string(), label: "Opus".to_string() },
+                ModelOption { value: "sonnet".to_string(), label: "sonnet".to_string() },
+            ]
+        );
+    }
+
+    // Mirrors src/core/normalize.ts normalizeSettings's `withDefault` behavior for terminal.
+
+    #[test]
+    fn wrong_typed_terminal_falls_back_to_default() {
+        let s: Settings = serde_json::from_str(r#"{"terminal": 42}"#).unwrap();
+        assert_eq!(s.terminal, "iTerm");
+    }
+
+    #[test]
+    fn blank_terminal_falls_back_to_default() {
+        let s: Settings = serde_json::from_str(r#"{"terminal": ""}"#).unwrap();
+        assert_eq!(s.terminal, "iTerm");
     }
 }
