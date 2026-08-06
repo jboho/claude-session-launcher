@@ -1,3 +1,4 @@
+pub mod applescript;
 pub mod launch;
 pub mod types;
 
