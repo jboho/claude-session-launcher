@@ -1,6 +1,7 @@
 import { dialog, ipcMain } from "electron";
 import { loadPresets, directoryExists } from "../core/presets-store.js";
 import { loadSettings, saveSettings } from "../core/settings.js";
+import { normalizeSettings } from "../core/normalize.js";
 import { upsertPreset, removePreset } from "./preset-actions.js";
 import { launchSpec } from "./spawn/index.js";
 import { detectClaude, detectTerminals } from "./detect.js";
@@ -12,8 +13,9 @@ export function registerIpc(deps: { setHotkey: (accel: string) => string } = { s
   ipcMain.handle("presets:remove", (_e, id: string) => removePreset(id));
   ipcMain.handle("settings:get", () => loadSettings());
   ipcMain.handle("settings:save", async (_e, s: Settings) => {
-    await saveSettings(s);
-    return s;
+    const clean = normalizeSettings(s);
+    await saveSettings(clean);
+    return clean;
   });
   ipcMain.handle("launch", async (_e, spec: LaunchSpec) => {
     try {

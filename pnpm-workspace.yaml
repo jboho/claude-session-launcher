@@ -1,10 +1,6 @@
+# Packages allowed to run install lifecycle scripts. electron downloads its runtime and
+# esbuild its native binary; nothing else needs one. (The single letters that used to be
+# listed here were the characters of "esbuild" — something appended the string per-char.)
 allowBuilds:
-  b: true
-  d: true
-  e: true
   electron: true
   esbuild: true
-  i: true
-  l: true
-  s: true
-  u: true

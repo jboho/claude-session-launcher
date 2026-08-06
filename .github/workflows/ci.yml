@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
 
+# CI only builds and tests; fork PRs run untrusted code, so give the token nothing to spend.
+permissions:
+  contents: read
+
 jobs:
   build-test:
     runs-on: ubuntu-latest

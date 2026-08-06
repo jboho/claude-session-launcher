@@ -3,6 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- The panel is entirely local: one module script, one stylesheet, no images, no network.
+       Everything else is denied so a future addition has to be a deliberate change here. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'" />
   <title>Claude Launcher</title>
   <link rel="stylesheet" href="./panel.css" />
 </head>

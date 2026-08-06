@@ -1,6 +1,7 @@
 import { promises as fs } from "node:fs";
 import * as path from "node:path";
 import { configDir } from "./presets-store.js";
+import { normalizeSettings } from "./normalize.js";
 import { DEFAULT_SETTINGS, type Settings } from "./types.js";
 
 export function settingsPath(env: NodeJS.ProcessEnv = process.env, home?: string): string {
@@ -10,8 +11,7 @@ export function settingsPath(env: NodeJS.ProcessEnv = process.env, home?: string
 export async function loadSettings(file: string = settingsPath()): Promise<Settings> {
   try {
     const raw = await fs.readFile(file, "utf8");
-    const parsed = JSON.parse(raw) as Partial<Settings>;
-    return { ...DEFAULT_SETTINGS, ...parsed };
+    return normalizeSettings(JSON.parse(raw));
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === "ENOENT") return { ...DEFAULT_SETTINGS };
     throw err;

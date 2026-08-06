@@ -1,10 +1,11 @@
-import { app, BrowserWindow, Menu, Tray, nativeImage, screen, globalShortcut } from "electron";
+import { app, BrowserWindow, Menu, Tray, nativeImage, screen, globalShortcut, shell } from "electron";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { registerIpc } from "./ipc.js";
 import { ensureSeedPresets } from "./seed.js";
 import { loadSettings } from "../core/settings.js";
 import { hotkeyCandidates } from "./hotkey.js";
+import { decideNavigation } from "../core/navigation.js";
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -55,9 +56,36 @@ function createPanel(): BrowserWindow {
       sandbox: false,
     },
   });
+  hardenNavigation(win);
   win.loadFile(path.join(dirname, "../renderer/index.html"));
   win.on("blur", () => win.hide());
   return win;
+}
+
+/**
+ * The panel renders only local files, so every navigation away from them is either a
+ * mistake or an attack. Two separate escapes have to be closed:
+ *
+ *  - `target="_blank"` (the docs link in the not-found banner). Electron's default handler
+ *    ALLOWS it, opening the remote page in a chrome-less app window. The child does not
+ *    inherit this window's preload — verified against Electron 33 — so it cannot reach the
+ *    IPC bridge, but a URL-bar-less window showing a third-party page is still the wrong
+ *    thing to hand a user. Send it to the real browser instead.
+ *  - Same-tab navigation. That one KEEPS the preload, which exposes settings:save and
+ *    launch — i.e. "set claudeBinary, then run it". Nothing triggers it today; this makes
+ *    that stay true.
+ */
+function hardenNavigation(win: BrowserWindow): void {
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (decideNavigation(url).openExternally) void shell.openExternal(url);
+    return { action: "deny" };
+  });
+  win.webContents.on("will-navigate", (event, url) => {
+    const { allowInApp, openExternally } = decideNavigation(url);
+    if (allowInApp) return;
+    event.preventDefault();
+    if (openExternally) void shell.openExternal(url);
+  });
 }
 
 function positionAndShow(): void {
