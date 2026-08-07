@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "identifier": "com.jboho.claude-launcher",
   "build": {
-    "frontendDist": "../dist/renderer",
+    "frontendDist": "../dist",
     "beforeBuildCommand": "pnpm build"
   },
   "app": {
@@ -12,6 +12,7 @@
       {
         "label": "panel",
         "title": "Claude Launcher",
+        "url": "renderer/index.html",
         "width": 460,
         "height": 620,
         "resizable": false,
