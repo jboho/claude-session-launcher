@@ -14,7 +14,7 @@
         "title": "Claude Launcher",
         "url": "renderer/index.html",
         "width": 460,
-        "height": 620,
+        "height": 628,
         "resizable": false,
         "decorations": false,
         "visible": false,
