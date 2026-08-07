@@ -14,7 +14,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "dist:mac": "pnpm build && electron-builder --mac --dir",
-    "dist:mac:dmg": "pnpm build && electron-builder --mac"
+    "dist:mac:dmg": "pnpm build && electron-builder --mac",
+    "tauri": "tauri",
+    "tauri:dev": "pnpm build && tauri dev",
+    "tauri:build": "tauri build"
   },
   "build": {
     "appId": "com.jboho.claude-launcher",
@@ -50,6 +53,7 @@
     }
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4",
     "@types/node": "^20.0.0",
     "electron": "^33.0.0",
     "electron-builder": "^25.1.8",
