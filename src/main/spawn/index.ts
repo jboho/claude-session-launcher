@@ -13,8 +13,12 @@ export type WinLauncher = (launchString: string) => Promise<void>;
  * smuggles shell metacharacters through those dials. wd/cmd are single-quoted by
  * buildLaunchString and are intentionally NOT restricted (they legitimately hold
  * spaces, slashes, etc.).
+ *
+ * A leading `-` is rejected as well: no legitimate model, mode, or effort value starts
+ * with one, and allowing it would leave the app depending on the external CLI's own
+ * argument parsing to decide whether `--model -rf` is a value or a second flag.
  */
-const SAFE_DIAL = /^[A-Za-z0-9._-]*$/;
+const SAFE_DIAL = /^(?!-)[A-Za-z0-9._-]*$/;
 
 function assertSafeDial(name: string, value: string): void {
   if (!SAFE_DIAL.test(value)) {

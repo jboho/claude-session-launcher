@@ -50,14 +50,14 @@ describe("buildMacScript", () => {
 
 describe("buildGhosttyArgs", () => {
   test("wraps the launch string as a single zsh -lc arg", () => {
-    expect(buildGhosttyArgs("cd '~/Code' && claude")).toEqual([
+    expect(buildGhosttyArgs("cd -- '~/Code' && claude")).toEqual([
       "-na",
       "Ghostty",
       "--args",
       "-e",
       "/bin/zsh",
       "-lc",
-      "cd '~/Code' && claude",
+      "cd -- '~/Code' && claude",
     ]);
   });
 });

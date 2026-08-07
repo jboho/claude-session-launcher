@@ -43,5 +43,7 @@ describe("isValidModelValue", () => {
     expect(isValidModelValue("   ")).toBe(false);
     expect(isValidModelValue("opus; rm -rf ~")).toBe(false);
     expect(isValidModelValue("opus[1m]")).toBe(false); // brackets deferred (see spec)
+    expect(isValidModelValue("-rf")).toBe(false); // would reach the CLI as a flag, not a value
+    expect(isValidModelValue("--dangerously-skip-permissions")).toBe(false);
   });
 });
