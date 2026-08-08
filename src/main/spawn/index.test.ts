@@ -10,7 +10,7 @@ describe("launchSpec", () => {
     const launchMac = vi.fn().mockResolvedValue(undefined);
     await launchSpec(spec, settings, { platform: "darwin", launchMac });
     expect(launchMac).toHaveBeenCalledWith(
-      "cd '~/Code' && claude --model opus --permission-mode auto --effort high",
+      "cd -- '~/Code' && claude --model opus --permission-mode auto --effort high",
       "iTerm",
     );
   });
@@ -24,7 +24,7 @@ describe("launchSpec", () => {
     const winSpec: LaunchSpec = { model: "opus", mode: "auto", effort: "high", wd: "C:\\Code", cmd: "" };
     await launchSpec(winSpec, settings, { platform: "win32", launchWin });
     expect(launchWin).toHaveBeenCalledWith(
-      "Set-Location 'C:\\Code'; claude --model opus --permission-mode auto --effort high",
+      "Set-Location -LiteralPath 'C:\\Code'; claude --model opus --permission-mode auto --effort high",
     );
   });
 
@@ -39,6 +39,20 @@ describe("launchSpec", () => {
     const launchMac = vi.fn().mockResolvedValue(undefined);
     const evil: LaunchSpec = { ...spec, model: "opus; rm -rf ~" };
     await expect(launchSpec(evil, settings, { platform: "darwin", launchMac })).rejects.toThrow(/[Uu]nsafe model/);
+    expect(launchMac).not.toHaveBeenCalled();
+  });
+
+  // A dial is emitted UNQUOTED, so a leading dash would reach the CLI as a second flag
+  // rather than as the preceding flag's value. Nothing legitimate starts with one.
+  test("rejects a dial that starts with a dash and does not launch", async () => {
+    const launchMac = vi.fn().mockResolvedValue(undefined);
+    for (const evil of [
+      { ...spec, model: "-rf" },
+      { ...spec, mode: "--dangerously-skip-permissions" },
+      { ...spec, effort: "-high" },
+    ] as LaunchSpec[]) {
+      await expect(launchSpec(evil, settings, { platform: "darwin", launchMac })).rejects.toThrow(/[Uu]nsafe/);
+    }
     expect(launchMac).not.toHaveBeenCalled();
   });
 
