@@ -3,3 +3,14 @@ dist/
 release/
 *.log
 .DS_Store
+src-tauri/target/
+
+# Mutation-testing output
+reports/
+.stryker-tmp/
+src-tauri/mutants.out/
+src-tauri/mutants.out.old/
+
+# Signing / notarization secrets — never commit
+.env.signing
+*.p8

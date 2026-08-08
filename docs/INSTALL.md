@@ -12,10 +12,9 @@ certificate (Team `72FBK9YTA3`) and run under the hardened runtime.
 3. Launch it. The app lives in the menu bar (look for the bolt); press **⌥W**
    (Option+W, the default hotkey) to summon the panel.
 
-> **Gatekeeper.** Signed builds are not yet **notarized**, so a DMG you *download*
-> still trips the "unidentified developer" warning — macOS only clears that for
-> notarized apps. Until notarization is enabled, either right-click → **Open**, or
-> clear the quarantine flag once:
+> **Gatekeeper.** A **notarized** DMG opens cleanly. If you have a build that was signed
+> but *not* notarized, a downloaded copy trips the "unidentified developer" warning —
+> either right-click → **Open**, or clear the quarantine flag once:
 > ```bash
 > xattr -dr com.apple.quarantine "/Applications/Claude Launcher.app"
 > ```
@@ -37,28 +36,43 @@ why they re-prompted on every install.
 
 ## Building locally
 
+The app is built with **Tauri** (Rust core + WKWebView). Both bundle targets — the
+`.app` and a `.dmg` — land under `src-tauri/target/release/bundle/`.
+
 ```bash
 command pnpm install
-command pnpm dist:mac        # fast: unpacked .app -> release/mac-arm64/
-command pnpm dist:mac:dmg    # full DMG -> release/Claude-Launcher-<version>-<arch>.dmg
+command pnpm tauri:build          # ad-hoc signed (no Developer ID needed)
+command pnpm tauri:build:signed   # Developer ID signed (+ notarized if creds present)
 ```
 
-Signing happens automatically when a `Developer ID Application` certificate is present in
-the keychain. To verify a build:
+`tauri:build` with no signing identity produces an **ad-hoc** build — fine to run on the
+machine that built it, but Gatekeeper rejects it elsewhere. `tauri:build:signed`
+(`scripts/build-signed.sh`) auto-discovers your single `Developer ID Application`
+certificate from the keychain — nothing personal is committed to the repo — and verifies
+the result. To verify by hand:
 
 ```bash
-codesign -dvvv "release/mac-arm64/Claude Launcher.app"   # expect flags=0x10000(runtime)
-codesign --verify --deep --strict "release/mac-arm64/Claude Launcher.app"
+APP="src-tauri/target/release/bundle/macos/Claude Launcher.app"
+codesign -dvvv "$APP"                    # expect flags=0x10000(runtime), Authority=Developer ID Application
+codesign --verify --deep --strict "$APP"
+spctl -a -vvv -t exec "$APP"             # 'accepted' once notarized; 'rejected/Unnotarized' before
 ```
 
-To build **unsigned** (what CI does), set `CSC_IDENTITY_AUTO_DISCOVERY=false`.
+### Notarization
+
+`tauri:build:signed` notarizes and staples automatically **when notary credentials are
+present** in a gitignored `.env.signing` (copy `.env.signing.example` and fill in one
+method — an App Store Connect API key is recommended). With no credentials it still
+produces a signed build and just skips notarization. Notarization is what flips a
+*downloaded* DMG from the "unidentified developer" warning to opening cleanly; signing
+alone only stabilizes the app's code identity (see the TCC note above).
 
 ### Entitlements
 
-`build/entitlements.mac.plist` is deliberately minimal — `allow-jit` and
-`allow-unsigned-executable-memory` for V8, plus `automation.apple-events` for the
-terminal integration. `disable-library-validation` (electron-builder's default) is **not**
-included; the app has no native runtime dependencies and was verified to launch without it.
+`src-tauri/entitlements.plist` is deliberately minimal — only
+`com.apple.security.automation.apple-events`, for the terminal integration. Tauri applies
+the hardened runtime automatically when signing with a Developer ID (no JIT / unsigned-memory
+entitlements are needed — unlike the former Electron build, there is no bundled V8).
 
 ## Releasing (maintainers)
 
@@ -70,8 +84,11 @@ git tag v0.2.0
 git push origin v0.2.0
 ```
 
-CI builds an **unsigned** macOS DMG (`CSC_IDENTITY_AUTO_DISCOVERY=false`) and uploads it to
-a GitHub Release. Signing in CI would require exporting the Developer ID cert as a
-base64 `CSC_LINK` secret plus `CSC_KEY_PASSWORD`; not set up yet.
+> **CI is still Electron-based and has not been ported to Tauri yet.** The existing
+> `release.yml`/`ci.yml` build the old electron-builder artifact. Porting them is tracked
+> separately. A signed + notarized Tauri release in CI would import the Developer ID cert
+> from an `APPLE_CERTIFICATE`/`APPLE_CERTIFICATE_PASSWORD` secret and set the same notary
+> env vars as `.env.signing` (API-key method), then run `pnpm tauri:build`.
 
-Every PR and push to `main` also runs the build + test gate (`.github/workflows/ci.yml`).
+Until then, cut releases locally with `pnpm tauri:build:signed` (with `.env.signing`
+populated) and upload the notarized DMG from `src-tauri/target/release/bundle/dmg/`.

@@ -14,15 +14,30 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "dist:mac": "pnpm build && electron-builder --mac --dir",
-    "dist:mac:dmg": "pnpm build && electron-builder --mac"
+    "dist:mac:dmg": "pnpm build && electron-builder --mac",
+    "tauri": "tauri",
+    "tauri:dev": "pnpm build && tauri dev",
+    "tauri:build": "tauri build",
+    "tauri:build:signed": "bash scripts/build-signed.sh"
   },
   "build": {
     "appId": "com.jboho.claude-launcher",
     "productName": "Claude Launcher",
     "artifactName": "Claude-Launcher-${version}-${arch}.${ext}",
-    "publish": { "provider": "github", "owner": "jboho", "repo": "claude-session-launcher" },
-    "directories": { "output": "release" },
-    "files": ["dist/**", "!dist/**/*.test.js", "!dist/**/*.test.js.map", "package.json"],
+    "publish": {
+      "provider": "github",
+      "owner": "jboho",
+      "repo": "claude-session-launcher"
+    },
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**",
+      "!dist/**/*.test.js",
+      "!dist/**/*.test.js.map",
+      "package.json"
+    ],
     "mac": {
       "target": "dmg",
       "category": "public.app-category.developer-tools",
@@ -39,10 +54,16 @@
     }
   },
   "devDependencies": {
+    "@stryker-mutator/core": "^9.6.1",
+    "@stryker-mutator/vitest-runner": "^9.6.1",
+    "@tauri-apps/cli": "^2.11.4",
     "@types/node": "^20.0.0",
     "electron": "^33.0.0",
     "electron-builder": "^25.1.8",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.11.1"
   }
 }
