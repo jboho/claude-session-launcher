@@ -73,11 +73,25 @@ codesign --verify --deep --strict --verbose=2 "$APP"
 codesign -dvvv "$APP" 2>&1 | grep -E 'Authority=Developer ID Application|flags=|TeamIdentifier=' || true
 
 echo ""
-echo "==> Gatekeeper assessment (spctl):"
+echo "==> Gatekeeper assessment (spctl): $APP"
 if spctl -a -vvv -t exec "$APP" 2>&1; then
   echo "    -> accepted"
 else
   echo "    -> rejected (expected until the build is NOTARIZED)"
+fi
+
+if [[ -n "$DMG" ]]; then
+  echo ""
+  echo "==> verifying DMG (the downloaded artifact): $DMG"
+  codesign --verify --strict "$DMG" 2>&1 && echo "    signature valid" || echo "    DMG unsigned/invalid"
+  # Assess the DMG itself as Gatekeeper does on open — not just the .app inside it. A
+  # notarized+stapled DMG validates offline; before notarization this is 'rejected', same
+  # as the app. (`-t open` + primary-signature context is the DMG-appropriate assessment.)
+  if spctl -a -t open --context context:primary-signature -vvv "$DMG" 2>&1; then
+    echo "    -> accepted"
+  else
+    echo "    -> rejected (expected until the build is NOTARIZED + stapled)"
+  fi
 fi
 
 if [[ "$NOTARIZE_MODE" != "none" && "$NOTARIZE_MODE" != skipped* ]]; then
