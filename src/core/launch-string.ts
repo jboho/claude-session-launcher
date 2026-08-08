@@ -6,6 +6,23 @@ export function shellQuote(s: string): string {
 }
 
 /**
+ * A token safe to leave UNQUOTED in a command word. Excludes shell metacharacters —
+ * notably the glob brackets in context-variant model ids like `claude-opus-4-8[1m]`,
+ * which zsh (with NOMATCH) would try to expand and abort on.
+ */
+const BARE_TOKEN_RE = /^[A-Za-z0-9._-]+$/;
+
+/** POSIX-quote `s` only when it isn't a bare-safe token (keeps plain model ids unquoted). */
+export function shellQuoteIfNeeded(s: string): string {
+  return BARE_TOKEN_RE.test(s) ? s : shellQuote(s);
+}
+
+/** PowerShell-quote `s` only when it isn't a bare-safe token. */
+export function psQuoteIfNeeded(s: string): string {
+  return BARE_TOKEN_RE.test(s) ? s : psQuote(s);
+}
+
+/**
  * Build the shell command written into the terminal to start the session.
  *
  * Both `--` separators are load-bearing; do not remove them.
@@ -21,7 +38,7 @@ export function shellQuote(s: string): string {
  */
 export function buildLaunchString(spec: LaunchSpec, claudeCmd = "claude"): string {
   const parts = [claudeCmd];
-  if (spec.model.trim()) parts.push("--model", spec.model.trim());
+  if (spec.model.trim()) parts.push("--model", shellQuoteIfNeeded(spec.model.trim()));
   if (spec.mode.trim()) parts.push("--permission-mode", spec.mode.trim());
   if (spec.effort.trim()) parts.push("--effort", spec.effort.trim());
   if (spec.cmd.trim()) parts.push("--", shellQuote(spec.cmd.trim()));
@@ -36,8 +53,9 @@ export function psQuote(s: string): string {
 
 /**
  * Windows (PowerShell) form of the launch command. PowerShell sequences with `;` and
- * uses `Set-Location` — the POSIX `cd '…' && …` form is invalid there. Dials go in
- * unquoted (SAFE_DIAL-guarded upstream, like the POSIX builder); wd/cmd are ps-quoted.
+ * uses `Set-Location` — the POSIX `cd '…' && …` form is invalid there. Mode/effort go in
+ * unquoted (SAFE_DIAL-guarded upstream, like the POSIX builder); the model is ps-quoted
+ * only if it isn't a bare token (e.g. a `[1m]` context variant); wd/cmd are ps-quoted.
  *
  * Same `--` separator as the POSIX builder, for the same reason: it stops a flag-shaped
  * cmd from being parsed by `claude` as one of its own options. `-LiteralPath` is the
@@ -48,7 +66,7 @@ export function psQuote(s: string): string {
  */
 export function buildWinLaunchString(spec: LaunchSpec, claudeCmd = "claude"): string {
   const parts = [claudeCmd];
-  if (spec.model.trim()) parts.push("--model", spec.model.trim());
+  if (spec.model.trim()) parts.push("--model", psQuoteIfNeeded(spec.model.trim()));
   if (spec.mode.trim()) parts.push("--permission-mode", spec.mode.trim());
   if (spec.effort.trim()) parts.push("--effort", spec.effort.trim());
   if (spec.cmd.trim()) parts.push("--", psQuote(spec.cmd.trim()));

@@ -45,7 +45,7 @@ function createPanel(): BrowserWindow {
     // Sized so the panel's content fits without scrolling — including the transient
     // states that add a row (the "Claude not found" banner, the save-preset name row).
     width: 460,
-    height: 620,
+    height: 640,
     show: false,
     frame: false,
     resizable: false,

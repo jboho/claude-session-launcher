@@ -30,6 +30,24 @@ describe("buildLaunchString", () => {
       .toBe("claude --model sonnet --effort low");
   });
 
+  test("quotes a bracket context-variant model so the shell can't glob it", () => {
+    expect(buildLaunchString(spec({ model: "claude-opus-4-8[1m]", effort: "high" })))
+      .toBe("claude --model 'claude-opus-4-8[1m]' --effort high");
+  });
+
+  test("quotes any non-bare model token (bare-safe check is anchored at both ends)", () => {
+    expect(buildLaunchString(spec({ model: "a b" }))).toBe("claude --model 'a b'");
+  });
+
+  test("trims surrounding whitespace on each dial", () => {
+    expect(buildLaunchString(spec({ model: " opus ", mode: " auto ", effort: " high ", wd: " ~/Code ", cmd: " /q " })))
+      .toBe("cd -- '~/Code' && claude --model opus --permission-mode auto --effort high -- '/q'");
+  });
+
+  test("treats whitespace-only dials as unset", () => {
+    expect(buildLaunchString(spec({ model: "  ", mode: "  ", effort: "  ", wd: "  ", cmd: "  " }))).toBe("claude");
+  });
+
   test("quotes a working directory containing spaces", () => {
     expect(buildLaunchString(spec({ model: "opus", wd: "/Users/me/My Code" })))
       .toBe("cd -- '/Users/me/My Code' && claude --model opus");
@@ -101,6 +119,20 @@ describe("buildWinLaunchString", () => {
   test("omits unset dials", () => {
     expect(buildWinLaunchString(spec({ model: "sonnet", effort: "low" })))
       .toBe("claude --model sonnet --effort low");
+  });
+
+  test("ps-quotes a bracket context-variant model", () => {
+    expect(buildWinLaunchString(spec({ model: "claude-opus-4-8[1m]", effort: "high" })))
+      .toBe("claude --model 'claude-opus-4-8[1m]' --effort high");
+  });
+
+  test("trims surrounding whitespace on each dial", () => {
+    expect(buildWinLaunchString(spec({ model: " opus ", mode: " auto ", effort: " high ", wd: " C:\\Code ", cmd: " /q " })))
+      .toBe("Set-Location -LiteralPath 'C:\\Code'; claude --model opus --permission-mode auto --effort high -- '/q'");
+  });
+
+  test("treats whitespace-only dials as unset", () => {
+    expect(buildWinLaunchString(spec({ model: "  ", mode: "  ", effort: "  ", wd: "  ", cmd: "  " }))).toBe("claude");
   });
 
   test("ps-quotes a working directory containing spaces", () => {

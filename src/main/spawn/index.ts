@@ -8,11 +8,10 @@ export type MacLauncher = (launchString: string, terminalApp?: string) => Promis
 export type WinLauncher = (launchString: string) => Promise<void>;
 
 /**
- * model/mode/effort are passed UNQUOTED into the shell command, so restrict them
- * to a safe charset — defense-in-depth against a hand-edited presets.json that
- * smuggles shell metacharacters through those dials. wd/cmd are single-quoted by
- * buildLaunchString and are intentionally NOT restricted (they legitimately hold
- * spaces, slashes, etc.).
+ * mode/effort are passed UNQUOTED into the shell command, so restrict them to a safe
+ * charset — defense-in-depth against a hand-edited presets.json that smuggles shell
+ * metacharacters through those dials. wd/cmd are single-quoted by buildLaunchString and
+ * are intentionally NOT restricted (they legitimately hold spaces, slashes, etc.).
  *
  * A leading `-` is rejected as well: no legitimate model, mode, or effort value starts
  * with one, and allowing it would leave the app depending on the external CLI's own
@@ -20,9 +19,17 @@ export type WinLauncher = (launchString: string) => Promise<void>;
  */
 const SAFE_DIAL = /^(?!-)[A-Za-z0-9._-]*$/;
 
-function assertSafeDial(name: string, value: string): void {
-  if (!SAFE_DIAL.test(value)) {
-    throw new Error(`Unsafe ${name} value: ${JSON.stringify(value)} — only letters, digits, '.', '-', '_' are allowed.`);
+/**
+ * Model additionally allows the `[ ]` of context-variant ids like `claude-opus-4-8[1m]`.
+ * The builder quotes the model token when it isn't bare-safe (shellQuoteIfNeeded /
+ * psQuoteIfNeeded), so brackets reach the shell literally rather than as a glob; the
+ * charset stays otherwise tight so a hand-edited config can't smuggle metacharacters.
+ */
+const SAFE_MODEL = /^(?!-)[A-Za-z0-9._[\]-]*$/;
+
+function assertSafeDial(name: string, value: string, re: RegExp = SAFE_DIAL): void {
+  if (!re.test(value)) {
+    throw new Error(`Unsafe ${name} value: ${JSON.stringify(value)} — contains disallowed characters.`);
   }
 }
 
@@ -31,7 +38,7 @@ export async function launchSpec(
   settings: Settings,
   deps: { platform?: string; launchMac?: MacLauncher; launchWin?: WinLauncher } = {},
 ): Promise<void> {
-  assertSafeDial("model", spec.model);
+  assertSafeDial("model", spec.model, SAFE_MODEL);
   assertSafeDial("mode", spec.mode);
   assertSafeDial("effort", spec.effort);
 

@@ -33,17 +33,21 @@ describe("validatePreset", () => {
 });
 
 describe("isValidModelValue", () => {
-  test("accepts aliases and dated ids", () => {
+  test("accepts aliases, dated ids, and bracket context-variants", () => {
     expect(isValidModelValue("opus")).toBe(true);
     expect(isValidModelValue("claude-sonnet-4-5-20250929")).toBe(true);
     expect(isValidModelValue("fable")).toBe(true);
+    expect(isValidModelValue("claude-opus-4-8[1m]")).toBe(true); // 1M context variant
+    expect(isValidModelValue("  opus  ")).toBe(true); // trimmed before validating
   });
   test("rejects empty and shell-metacharacter values", () => {
     expect(isValidModelValue("")).toBe(false);
     expect(isValidModelValue("   ")).toBe(false);
     expect(isValidModelValue("opus; rm -rf ~")).toBe(false);
-    expect(isValidModelValue("opus[1m]")).toBe(false); // brackets deferred (see spec)
     expect(isValidModelValue("-rf")).toBe(false); // would reach the CLI as a flag, not a value
     expect(isValidModelValue("--dangerously-skip-permissions")).toBe(false);
+    expect(isValidModelValue("opus$(whoami)")).toBe(false);
+    // Bare chars trail a metachar — anchoring at BOTH ends must reject this.
+    expect(isValidModelValue("evil opus")).toBe(false);
   });
 });

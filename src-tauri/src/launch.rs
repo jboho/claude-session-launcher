@@ -5,9 +5,28 @@ pub fn shell_quote(s: &str) -> String {
     format!("'{}'", s.replace('\'', r"'\''"))
 }
 
-/// model/mode/effort are written UNQUOTED into the shell command, so they are restricted
-/// to a charset that cannot express a metacharacter, and forbidden from starting with `-`
-/// so a value can never be interpreted as a CLI flag by the external `claude` binary's own
+/// A token safe to leave UNQUOTED in a command word — no shell metacharacters, notably no
+/// glob brackets (which zsh with NOMATCH would try to expand and abort on). Mirrors
+/// BARE_TOKEN_RE in launch-string.ts.
+fn is_bare_token(s: &str) -> bool {
+    !s.is_empty()
+        && s.chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_'))
+}
+
+/// POSIX-quote `s` only when it isn't a bare-safe token (keeps plain model ids unquoted).
+/// Mirrors shellQuoteIfNeeded in launch-string.ts.
+pub fn shell_quote_if_needed(s: &str) -> String {
+    if is_bare_token(s) {
+        s.to_string()
+    } else {
+        shell_quote(s)
+    }
+}
+
+/// mode/effort are written UNQUOTED into the shell command, so they are restricted to a
+/// charset that cannot express a metacharacter, and forbidden from starting with `-` so a
+/// value can never be interpreted as a CLI flag by the external `claude` binary's own
 /// (undocumented, closed) argument parser. Mirrors SAFE_DIAL in the TypeScript dispatcher.
 /// wd/cmd are intentionally unrestricted — they are quoted and `--`-separated instead.
 pub fn is_safe_dial(value: &str) -> bool {
@@ -17,12 +36,33 @@ pub fn is_safe_dial(value: &str) -> bool {
             .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_'))
 }
 
+/// The model additionally allows the `[ ]` of context-variant ids like `claude-opus-4-8[1m]`.
+/// It is still forbidden from starting with `-`; the builder quotes it via
+/// `shell_quote_if_needed` so the brackets reach the shell literally rather than as a glob.
+/// Mirrors SAFE_MODEL in src/main/spawn/index.ts.
+pub fn is_safe_model(value: &str) -> bool {
+    !value.starts_with('-')
+        && value
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_' | '[' | ']'))
+}
+
 fn assert_safe_dial(name: &str, value: &str) -> Result<(), String> {
     if is_safe_dial(value) {
         Ok(())
     } else {
         Err(format!(
             "Unsafe {name} value: {value:?} — only letters, digits, '.', '-', '_' are allowed."
+        ))
+    }
+}
+
+fn assert_safe_model(value: &str) -> Result<(), String> {
+    if is_safe_model(value) {
+        Ok(())
+    } else {
+        Err(format!(
+            "Unsafe model value: {value:?} — only letters, digits, '.', '-', '_', '[', ']' are allowed."
         ))
     }
 }
@@ -43,13 +83,13 @@ pub fn resolve_claude_command(binary: &str) -> String {
 /// parsed as a positional argument by `claude`/`cd`, never as an option — do not remove
 /// either `--` as a "simplification".
 pub fn build_launch_string(spec: &LaunchSpec, claude_cmd: &str) -> Result<String, String> {
-    assert_safe_dial("model", spec.model.trim())?;
+    assert_safe_model(spec.model.trim())?;
     assert_safe_dial("mode", spec.mode.trim())?;
     assert_safe_dial("effort", spec.effort.trim())?;
 
     let mut parts = vec![claude_cmd.to_string()];
     if !spec.model.trim().is_empty() {
-        parts.push(format!("--model {}", spec.model.trim()));
+        parts.push(format!("--model {}", shell_quote_if_needed(spec.model.trim())));
     }
     if !spec.mode.trim().is_empty() {
         parts.push(format!("--permission-mode {}", spec.mode.trim()));
@@ -131,6 +171,37 @@ mod tests {
         assert!(!is_safe_dial("opus[1m]"));
         assert!(!is_safe_dial("a b"));
         assert!(!is_safe_dial("a\nb"));
+    }
+
+    // The model charset additionally allows `[ ]` for context-variant ids, but mode/effort
+    // (is_safe_dial) still do not — brackets are the model's alone. Mirrors SAFE_MODEL in
+    // src/main/spawn/index.ts.
+    #[test]
+    fn model_charset_allows_brackets_but_still_rejects_metacharacters_and_leading_hyphen() {
+        assert!(is_safe_model(""));
+        assert!(is_safe_model("claude-opus-4-8[1m]"));
+        assert!(is_safe_model("claude-sonnet-4-5-20250929"));
+        assert!(!is_safe_model("-rf"));
+        assert!(!is_safe_model("opus; rm -rf ~"));
+        assert!(!is_safe_model("opus$(whoami)"));
+        assert!(!is_safe_model("evil opus"));
+    }
+
+    // The real launch path: a bracket context-variant model must be single-quoted so the
+    // shell can't glob it, while a plain model id stays unquoted. Mirrors the TS builder.
+    #[test]
+    fn a_bracket_context_variant_model_is_quoted_so_the_shell_cannot_glob_it() {
+        let s = spec("claude-opus-4-8[1m]", "auto", "high", "", "");
+        assert_eq!(
+            build_launch_string(&s, "claude").unwrap(),
+            "claude --model 'claude-opus-4-8[1m]' --permission-mode auto --effort high"
+        );
+    }
+
+    #[test]
+    fn a_plain_model_id_stays_unquoted() {
+        let s = spec("claude-opus-4-8", "", "", "", "");
+        assert_eq!(build_launch_string(&s, "claude").unwrap(), "claude --model claude-opus-4-8");
     }
 
     // Defense in depth: a dial must never be able to masquerade as a CLI flag, even

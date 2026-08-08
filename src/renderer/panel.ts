@@ -56,6 +56,14 @@ const composed = (): LaunchSpec => ({
   cmd: composer.cmd,
 });
 
+/** Turn off the webview's text assistance for technical inputs (ids, paths, commands). */
+function disableTextAssist(input: HTMLInputElement): void {
+  input.setAttribute("autocapitalize", "off");
+  input.setAttribute("autocorrect", "off");
+  input.setAttribute("autocomplete", "off");
+  input.spellcheck = false;
+}
+
 function sqBtn(label: string, on: boolean, onclick: () => void, disabled = false): HTMLButtonElement {
   const b = document.createElement("button");
   b.className = "sq" + (on ? " on" : "") + (disabled ? " disabled" : "");
@@ -205,6 +213,7 @@ function renderModelEditor(): void {
     const val = document.createElement("input");
     val.value = m.value;
     val.placeholder = "value (e.g. opus)";
+    disableTextAssist(val); // model ids are technical tokens — never autocapitalize/-correct
     const lab = document.createElement("input");
     lab.value = m.label;
     lab.placeholder = "label";

@@ -66,6 +66,30 @@ describe("launchSpec", () => {
     );
   });
 
+  test("rejects an unsafe mode value and does not launch", async () => {
+    const launchMac = vi.fn().mockResolvedValue(undefined);
+    const evil: LaunchSpec = { ...spec, mode: "auto; rm -rf ~" };
+    await expect(launchSpec(evil, settings, { platform: "darwin", launchMac })).rejects.toThrow(/[Uu]nsafe mode/);
+    expect(launchMac).not.toHaveBeenCalled();
+  });
+
+  test("rejects an unsafe effort value and does not launch", async () => {
+    const launchMac = vi.fn().mockResolvedValue(undefined);
+    const evil: LaunchSpec = { ...spec, effort: "high && whoami" };
+    await expect(launchSpec(evil, settings, { platform: "darwin", launchMac })).rejects.toThrow(/[Uu]nsafe effort/);
+    expect(launchMac).not.toHaveBeenCalled();
+  });
+
+  test("allows a bracket context-variant model and quotes it in the launch string", async () => {
+    const launchMac = vi.fn().mockResolvedValue(undefined);
+    const ok: LaunchSpec = { ...spec, model: "claude-opus-4-8[1m]", wd: "", cmd: "" };
+    await launchSpec(ok, settings, { platform: "darwin", launchMac });
+    expect(launchMac).toHaveBeenCalledWith(
+      "claude --model 'claude-opus-4-8[1m]' --permission-mode auto --effort high",
+      "iTerm",
+    );
+  });
+
   test("uses the configured claude binary path (quoted) in the launch string", async () => {
     const launchMac = vi.fn().mockResolvedValue(undefined);
     const withBinary: Settings = { ...settings, claudeBinary: "/opt/my tools/claude" };
