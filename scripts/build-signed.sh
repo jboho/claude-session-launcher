@@ -65,6 +65,21 @@ APP="$(/usr/bin/find src-tauri/target/release/bundle/macos -maxdepth 1 -name '*.
 DMG="$(/usr/bin/find src-tauri/target/release/bundle/dmg -maxdepth 1 -name '*.dmg' | head -n1)"
 if [[ -z "$APP" ]]; then echo "error: no .app produced" >&2; exit 1; fi
 
+# --- notarize the DMG container --------------------------------------------
+# Tauri notarizes and staples the .app, then builds the DMG *around* it, so the
+# DMG itself never receives a ticket. A DOWNLOADED DMG then trips Gatekeeper even
+# though the .app inside is notarized. Submit and staple the DMG separately.
+if [[ -n "$DMG" && "$NOTARIZE_MODE" != "none" && "$NOTARIZE_MODE" != skipped* ]]; then
+  echo ""
+  echo "==> notarizing the DMG: $DMG"
+  if [[ -n "${APPLE_API_KEY:-}" ]]; then
+    xcrun notarytool submit "$DMG" --key "$APPLE_API_KEY_PATH" --key-id "$APPLE_API_KEY" --issuer "$APPLE_API_ISSUER" --wait
+  else
+    xcrun notarytool submit "$DMG" --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" --team-id "$APPLE_TEAM_ID" --wait
+  fi
+  xcrun stapler staple "$DMG"
+fi
+
 # --- verify ----------------------------------------------------------------
 echo ""
 echo "==> verifying signature: $APP"
