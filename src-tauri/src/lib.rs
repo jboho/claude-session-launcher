@@ -13,8 +13,8 @@ use std::str::FromStr;
 use std::sync::Mutex;
 use tauri::{
     image::Image,
-    tray::{MouseButton, TrayIconBuilder, TrayIconEvent},
-    ActivationPolicy, Manager, WebviewWindow, WindowEvent,
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
+    ActivationPolicy, Manager, WebviewWindow,
 };
 use tauri_plugin_global_shortcut::{Shortcut, ShortcutState};
 
@@ -129,8 +129,12 @@ pub fn run() {
                 .icon(icon)
                 .icon_as_template(true)
                 .on_tray_icon_event(|tray, event| {
+                    // The tray fires Click on BOTH press (Down) and release (Up). Act on
+                    // Up only — reacting to both toggles twice per click, which showed the
+                    // panel on press and hid it on release (a press-and-hold, not a toggle).
                     if let TrayIconEvent::Click {
                         button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
                         rect,
                         ..
                     } = event
@@ -155,15 +159,6 @@ pub fn run() {
                     }
                 })
                 .build(app)?;
-
-            if let Some(window) = app.get_webview_window("panel") {
-                let w = window.clone();
-                window.on_window_event(move |event| {
-                    if let WindowEvent::Focused(false) = event {
-                        let _ = w.hide();
-                    }
-                });
-            }
 
             let settings = config::load_settings(&config::settings_path(
                 &config::current_env(),

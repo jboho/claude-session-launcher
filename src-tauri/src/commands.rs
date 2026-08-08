@@ -61,10 +61,18 @@ pub fn preview_launch_string(spec: LaunchSpec) -> Result<String, String> {
 }
 
 #[tauri::command]
-pub fn launch(spec: LaunchSpec) -> Result<(), String> {
+pub fn launch(app: tauri::AppHandle, spec: LaunchSpec) -> Result<(), String> {
+    use tauri::Manager;
     let settings = load_settings(&settings_file())?;
     let launch_string = compose_launch_string(&spec, &settings)?;
-    launch_mac(&launch_string, &settings.terminal)
+    launch_mac(&launch_string, &settings.terminal)?;
+    // Dismiss the panel once the session is on its way. Done explicitly rather
+    // than leaning on the terminal stealing focus to blur-hide it — the panel is
+    // otherwise a persistent toggle (shown/hidden only by the tray or hotkey).
+    if let Some(panel) = app.get_webview_window("panel") {
+        let _ = panel.hide();
+    }
+    Ok(())
 }
 
 #[tauri::command]
