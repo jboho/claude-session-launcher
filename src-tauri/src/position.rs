@@ -102,6 +102,18 @@ mod tests {
     }
 
     #[test]
+    fn falls_back_when_tray_height_is_zero_but_width_is_nonzero() {
+        // The mirror of the width-zero case: a nonzero-width rect with height 0 (a status
+        // item collapsed behind the notch) is still "hidden" and must fall back, not be
+        // trusted. Guards the `t.h > 0` half of the presence check specifically.
+        let degenerate = Rect { x: 700, y: 0, w: 30, h: 0 };
+        assert_eq!(
+            panel_position(Some(degenerate), WORK, 460, 620),
+            ((1440 - 460) / 2, 25 + 60)
+        );
+    }
+
+    #[test]
     fn tray_present_but_hidden_matches_no_tray_at_all() {
         // Confirms the two fallback paths ("present but zero-size" vs "absent entirely")
         // are genuinely equivalent, not coincidentally equal for this one input.

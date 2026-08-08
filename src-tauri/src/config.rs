@@ -283,6 +283,18 @@ mod tests {
         assert!(err.to_lowercase().contains("json"), "error should mention JSON: {err}");
     }
 
+    #[test]
+    fn directory_exists_distinguishes_real_dirs_from_missing_blank_and_files() {
+        let dir = tempdir();
+        assert!(directory_exists(dir.to_str().unwrap()), "a real directory exists");
+        assert!(!directory_exists(dir.join("nope").to_str().unwrap()), "missing path");
+        assert!(!directory_exists(""), "blank is not a directory");
+        assert!(!directory_exists("   "), "whitespace-only is not a directory");
+        let file = dir.join("f.txt");
+        std::fs::write(&file, "x").unwrap();
+        assert!(!directory_exists(file.to_str().unwrap()), "a file is not a directory");
+    }
+
     /// A unique temp dir without a dev-dependency.
     fn tempdir() -> PathBuf {
         let base = std::env::temp_dir().join(format!(

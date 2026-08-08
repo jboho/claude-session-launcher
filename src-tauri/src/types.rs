@@ -228,6 +228,18 @@ mod tests {
     }
 
     #[test]
+    fn empty_label_falls_back_to_value() {
+        // A label present but empty ("") is treated the same as a missing label — it falls
+        // back to the value, rather than yielding a blank menu entry. Distinct from
+        // missing_label above: this exercises the `String("") if !is_empty()` guard, not the
+        // None arm.
+        let s: Settings =
+            serde_json::from_str(r#"{"models":[{"value":"sonnet","label":""}]}"#).unwrap();
+        assert_eq!(s.models.len(), 1);
+        assert_eq!(s.models[0].label, "sonnet");
+    }
+
+    #[test]
     fn models_that_is_not_an_array_yields_empty_list() {
         let s: Settings = serde_json::from_str(r#"{"models":{"value":"opus"}}"#).unwrap();
         assert_eq!(s.models.len(), 0);

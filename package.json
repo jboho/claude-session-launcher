@@ -17,7 +17,8 @@
     "dist:mac:dmg": "pnpm build && electron-builder --mac",
     "tauri": "tauri",
     "tauri:dev": "pnpm build && tauri dev",
-    "tauri:build": "tauri build"
+    "tauri:build": "tauri build",
+    "tauri:build:signed": "bash scripts/build-signed.sh"
   },
   "build": {
     "appId": "com.jboho.claude-launcher",
@@ -53,6 +54,8 @@
     }
   },
   "devDependencies": {
+    "@stryker-mutator/core": "^9.6.1",
+    "@stryker-mutator/vitest-runner": "^9.6.1",
     "@tauri-apps/cli": "^2.11.4",
     "@types/node": "^20.0.0",
     "electron": "^33.0.0",

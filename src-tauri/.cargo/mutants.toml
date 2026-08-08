@@ -1,0 +1,13 @@
+# cargo-mutants config for the Rust core.
+#
+# Run with:   cargo mutants --in-place
+#
+# --in-place is REQUIRED: `tauri::generate_context!()` in lib.rs reads the sibling
+# `../dist` frontend at compile time, which cargo-mutants' default copied scratch
+# tree does not contain (the baseline build panics with "frontendDist ... doesn't
+# exist"). Mutating the real tree sidesteps that. Because --in-place mutates shared
+# files it cannot be combined with --jobs (it runs serially).
+#
+# The Tauri glue (lib.rs / main.rs / commands.rs) is excluded: it has no unit tests
+# by design — its logic lives in the pure modules below, which are fully mutation-tested.
+exclude_globs = ["src/lib.rs", "src/main.rs", "src/commands.rs"]
