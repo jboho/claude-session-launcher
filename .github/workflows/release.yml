@@ -1,7 +1,12 @@
 name: Release
 
-# Build & publish an unsigned macOS DMG to a GitHub Release on a version tag.
-# Bump package.json "version", then: git tag vX.Y.Z && git push origin vX.Y.Z
+# Build & publish an unsigned macOS DMG (Tauri) to a GitHub Release on a version tag.
+# Bump package.json "version" and src-tauri/tauri.conf.json "version", then:
+#   git tag vX.Y.Z && git push origin vX.Y.Z
+#
+# The DMG is UNSIGNED (no signing identity on the runner), so a downloaded copy trips
+# Gatekeeper until CI signing/notarization secrets are added. Signed + notarized builds
+# are produced locally by `scripts/build-signed.sh` (pnpm tauri:build:signed).
 on:
   push:
     tags: ["v*"]
@@ -21,11 +26,14 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build
-      - name: Build & publish macOS DMG (unsigned)
-        run: pnpm exec electron-builder --mac --publish always
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Unsigned build — do not attempt to auto-discover a signing identity.
-          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - name: Build macOS app + DMG (unsigned)
+        run: pnpm tauri:build
+      - name: Publish DMG to the GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: src-tauri/target/release/bundle/dmg/*.dmg

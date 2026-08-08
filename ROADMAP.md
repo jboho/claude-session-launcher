@@ -17,7 +17,7 @@ first, then Windows) that anyone on the team can install and use.
 - Presets: save, delete, ✎ load-into-composer; **starter presets** seeded on first run
 - Inline command/prompt field (per-launch)
 - Terminals: iTerm (new tab) · Apple Terminal · Ghostty
-- macOS packaging: unsigned `.app` via `pnpm dist:mac` (electron-builder)
+- macOS packaging: signed + notarized `.app`/`.dmg` via `pnpm tauri:build:signed` (Tauri bundler)
 - Portable JSON config (`~/.config/claude-launcher/`, `%APPDATA%` on Windows; `CLAUDE_LAUNCHER_CONFIG` override)
 - **#3 — Make it work for anyone (generality):**
   - `claude` binary detection via a login-shell `command -v claude` probe (matches the terminal's own PATH); a "Claude not found" banner shows only when detection fails **and** no override is set; an optional "Claude binary" path field in Settings — when set, its shell-quoted value is used in the launch string in place of bare `claude`.
@@ -25,29 +25,38 @@ first, then Windows) that anyone on the team can install and use.
   - Configurable model list: an editable Models list in Settings (value + label rows, add/remove); unknown/custom model values are unrestricted, while known families (Haiku, including dated ids like `claude-haiku-…`) still grey out Effort + Auto. Model values are validated against a shell-safe charset (`[A-Za-z0-9._-]+`) since they're written unquoted into the launch string.
   - Configurable global hotkey: a recorder control in Settings; default remains Option+W (`Alt+W`); registered from saved settings at startup with a same-key/default fallback, and re-registered live from Settings with honest feedback on which accelerator actually ended up active.
   - Starter presets carry **no hardcoded paths** (done — working dir left blank).
-  - *Deferred:* no dedicated model-version-picker UI — the model list still takes free-text aliases/full dated ids, not a curated version selector. `[1m]` bracket context-variants (e.g. `opus[1m]`) are **not** supported — the model-value validator intentionally rejects brackets, since that would require the model token to be quoted in the launch string, which is unimplemented.
+  - `[1m]` bracket context-variants (e.g. `claude-opus-4-8[1m]`) **are** supported (PR #5): the model-value charset allows `[`/`]` and the launch-string builders (TypeScript preview + Rust launch backend) single-quote the model token when it isn't a bare-safe id, so the brackets reach the shell literally instead of glob-expanding.
+  - *Deferred:* no dedicated model-version-picker UI — the model list still takes free-text aliases/full dated ids, not a curated version selector.
 - **#4 — Distribution (internal):**
-  - Real app icon (bolt → `.icns` via electron-builder) and a menu-bar bolt template PNG (`assets/trayTemplate.png` + `@2x`, replacing the old baked-in data-URL).
-  - electron-builder builds an **unsigned macOS DMG** (`Claude-Launcher-<version>-<arch>.dmg`); GitHub Actions run build+test on every PR (`ci.yml`) and publish the DMG to a GitHub Release on a `v*` tag (`release.yml`).
-  - `docs/INSTALL.md` covers download + the Gatekeeper bypass for the unsigned build.
-  - *Deferred:* code signing + Apple notarization (removes the Gatekeeper prompt); auto-update (`electron-updater` needs macOS signing to work); Windows CI artifacts (need the Windows spawner below).
+  - Real app icon (bolt → `.icns`) and a menu-bar bolt template PNG, embedded in the Rust binary (`src-tauri/icons/`, via `include_bytes!`).
+  - The **Tauri bundler** builds the macOS `.app` + `.dmg`. Local builds are **signed with a Developer ID and notarized + stapled** via `scripts/build-signed.sh` (`pnpm tauri:build:signed`, credentials in a gitignored `.env.signing`). GitHub Actions run build+test on every PR (`ci.yml`) and publish an **unsigned** Tauri DMG to a GitHub Release on a `v*` tag (`release.yml`).
+  - `docs/INSTALL.md` covers download, the Gatekeeper story (notarized opens cleanly; unsigned needs the quarantine bypass), and local/CI release.
+  - *Deferred:* CI signing + notarization (import the Developer ID cert from Actions secrets so the released DMG opens cleanly); auto-update; Windows CI artifacts (need a Tauri Windows backend — see below).
 
 ---
 
-## #2 — Windows support (LAST) — groundwork laid; needs a real Windows machine to verify
+## #2 — Windows support (LAST) — needs a Tauri Windows backend + a real Windows machine
 
-**Groundwork done** (built + unit-tested on macOS, inert behind the `win32` platform switch so the macOS path is unaffected):
+The Tauri migration retired the Electron app, and with it the Electron-side Windows
+groundwork (`src/main/spawn/windows.ts` and the `win32` branch of the launch dispatcher,
+the Windows `defaultHotkey()` default). A Windows port now means adding a **Windows backend
+in `src-tauri/`** (the Rust launch path is macOS-only today).
 
-- **Windows-safe launch string** — `buildWinLaunchString` uses PowerShell semantics (`Set-Location '<wd>'; claude …`, `;`-sequenced) with `psQuote` quoting, instead of the POSIX `cd '…' && …` form; `resolveClaudeCommandWin` ps-quotes a configured binary path.
-- **Windows spawner** — `spawn/windows.ts` (`buildWtArgs` + `launchWin`) targets Windows Terminal (`wt`) → PowerShell; `launchSpec` now dispatches `win32` to it.
-- **Windows default hotkey** — `defaultHotkey()` returns `Control+Alt+C` on Windows (Alt+W collides with menu mnemonics there).
+**What survives** (pure, still unit-tested in `src/core/`, no consumer yet):
 
-**Still needs a real Windows machine** (unverified / not built):
+- **Windows-safe launch string** — `buildWinLaunchString` uses PowerShell semantics
+  (`Set-Location -LiteralPath '<wd>'; claude …`, `;`-sequenced) with `psQuote`/`psQuoteIfNeeded`
+  quoting instead of the POSIX `cd -- '…' && …` form; `resolveClaudeCommandWin` ps-quotes a
+  configured binary path. Whichever backend runs Windows can port this logic to Rust (as the
+  macOS launch string was) or call into it.
 
-- Verify the actual `wt` / PowerShell spawn (that a visible window opens; quoting through the shell); build a no-`wt` fallback.
-- **Windows tray icon** — colored `.ico` (Windows tray isn't a template image) and panel positioning for the bottom-right tray.
-- Windows terminal detection in Settings (current detection is macOS `open -Ra`).
-- CI Windows artifacts + an end-to-end run on Windows.
+**Still needed:**
+
+- A Rust Windows launch backend: spawn Windows Terminal (`wt`) → PowerShell (plus a no-`wt`
+  fallback), a Windows default hotkey, and Windows terminal detection (macOS detection is `open -Ra`).
+- **Windows tray icon** — colored `.ico` (Windows tray isn't a template image) and panel
+  positioning for the bottom-right tray.
+- CI Windows artifacts + an end-to-end run on a real Windows machine.
 - Config paths already handle `%APPDATA%`.
 
 ---

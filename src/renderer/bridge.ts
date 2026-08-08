@@ -1,11 +1,5 @@
-// Installs `window.launcher` when running inside the Tauri shell, over Tauri's IPC.
-//
-// Under Electron the preload (`src/preload/preload.ts`) has already installed `window.launcher`
-// via contextBridge by the time this module runs, so this file must NOT clobber it there —
-// only Tauri gets its own installation, detected via `window.__TAURI_INTERNALS__`, the marker
-// Tauri v2's webview injects before any page script runs (verified against
-// node_modules/@tauri-apps/api 2.11.1's core.js, which reads
-// `window.__TAURI_INTERNALS__.invoke(...)`).
+// Installs `window.launcher` over Tauri's IPC. Importing this module for its side effect
+// (`import "./bridge.js"` in panel.ts) wires the renderer to the Rust command surface.
 //
 // This calls `window.__TAURI_INTERNALS__.invoke(...)` directly rather than importing `invoke`
 // from "@tauri-apps/api/core". That package export is *exactly* a passthrough to the same
@@ -14,6 +8,11 @@
 // loads modules as native browser ES modules, which cannot resolve a bare specifier like
 // "@tauri-apps/api/core" without an import map. Only the `InvokeArgs` type is imported (erased
 // at compile time by `import type`, so it never reaches the emitted JS / the browser).
+//
+// `__TAURI_INTERNALS__` is the marker Tauri v2's webview injects before any page script runs
+// (verified against node_modules/@tauri-apps/api 2.11.1's core.js). The isTauri() guard keeps
+// this a no-op when the built renderer is opened in a plain browser (e.g. for measurement),
+// where panel.ts's init() then falls back to defaults.
 //
 // Command names below match the `#[tauri::command]` function names in src-tauri/src/commands.rs
 // and src-tauri/src/lib.rs exactly. Argument keys match the Rust parameter names: Tauri's

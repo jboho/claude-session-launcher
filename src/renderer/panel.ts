@@ -9,10 +9,8 @@ import {
   type Preset,
   type Settings,
 } from "../core/types.js";
-import { buildLaunchString } from "../core/launch-string.js";
 import { validatePreset, isValidModelValue } from "../core/validate.js";
 import { eventToAccelerator } from "../core/accelerator.js";
-import { resolveClaudeCommand } from "../core/claude-binary.js";
 import "./bridge.js";
 
 declare global {
@@ -24,11 +22,9 @@ declare global {
       getSettings(): Promise<Settings>;
       saveSettings(s: Settings): Promise<Settings>;
       launch(spec: LaunchSpec): Promise<void>;
-      // Tauri-only: builds the launch string via the same code the `launch` command runs, so the
-      // preview cannot drift from what actually executes. Absent under Electron, where the
-      // renderer falls back to the local buildLaunchString(...) below — that fallback is
-      // temporary and dies with the Electron app.
-      previewLaunchString?(spec: LaunchSpec): Promise<string>;
+      // Builds the launch string via the same Rust code the `launch` command runs, so the
+      // preview can never drift from what actually executes.
+      previewLaunchString(spec: LaunchSpec): Promise<string>;
       validateWorkdir(dir: string): Promise<boolean>;
       detectClaude(): Promise<{ found: boolean; path?: string }>;
       detectTerminals(): Promise<string[]>;
@@ -111,25 +107,19 @@ function renderDials(): void {
 let previewToken = 0;
 function renderPreview(): void {
   const spec = composed();
-  // Capability check (not a host check) so this degrades cleanly if the bridge is ever
-  // partially installed. Under Tauri, defer to the command so the preview can never drift
-  // from what `launch` actually runs; under Electron (no previewLaunchString), fall back to
-  // the local builder — temporary, and removable once Electron is gone.
-  if (typeof window.launcher.previewLaunchString === "function") {
-    const token = ++previewToken;
-    window.launcher
-      .previewLaunchString(spec)
-      .then((text) => {
-        if (token === previewToken) $("preview").textContent = text;
-      })
-      .catch(() => {
-        if (token === previewToken) {
-          $("preview").textContent = buildLaunchString(spec, resolveClaudeCommand(settings.claudeBinary));
-        }
-      });
-    return;
-  }
-  $("preview").textContent = buildLaunchString(spec, resolveClaudeCommand(settings.claudeBinary));
+  // The preview is built by the same Rust code path `launch` runs, so it can never drift from
+  // what actually executes.
+  const token = ++previewToken;
+  window.launcher
+    .previewLaunchString(spec)
+    .then((text) => {
+      if (token === previewToken) $("preview").textContent = text;
+    })
+    .catch(() => {
+      // previewLaunchString rejects only for a spec that `launch` would also refuse (e.g. an
+      // unsafe dial). Clear the preview rather than show a misleading locally-built string.
+      if (token === previewToken) $("preview").textContent = "";
+    });
 }
 
 function presetEl(p: Preset, plain: boolean): HTMLElement {

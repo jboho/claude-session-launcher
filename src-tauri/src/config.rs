@@ -100,6 +100,41 @@ pub fn save_presets(presets: &[Preset], file: &Path) -> Result<(), String> {
     atomic_write(file, &json)
 }
 
+/// The presets a fresh install starts with (was `STARTER_PRESETS` in the old TS core, seeded
+/// by the now-removed Electron `seed.ts`). ids are minted here at seed time.
+pub fn starter_presets() -> Vec<Preset> {
+    fn preset(name: &str, model: &str, mode: &str, effort: &str) -> Preset {
+        Preset {
+            id: uuid::Uuid::new_v4().to_string(),
+            name: name.into(),
+            model: model.into(),
+            mode: mode.into(),
+            effort: effort.into(),
+            ..Default::default()
+        }
+    }
+    vec![
+        preset("Plan", "opus", "plan", ""),
+        preset("Build", "opus", "acceptEdits", "high"),
+        preset("Autopilot", "opus", "auto", "high"),
+        preset("Quick", "haiku", "", ""),
+        preset("Explore", "sonnet", "plan", ""),
+    ]
+}
+
+/// First-run seeding: when the presets file does not yet exist, write the starter set and
+/// return it (mirrors the old Electron seed's "seed when no presets file exists"). An
+/// existing file — even an empty `[]` the user deliberately cleared — is respected and
+/// never re-seeded.
+pub fn load_or_seed_presets(file: &Path) -> Result<Vec<Preset>, String> {
+    if file.exists() {
+        return load_presets(file);
+    }
+    let seeded = starter_presets();
+    save_presets(&seeded, file)?;
+    Ok(seeded)
+}
+
 pub fn load_settings(file: &Path) -> Result<Settings, String> {
     let raw = match std::fs::read_to_string(file) {
         Ok(r) => r,
@@ -304,5 +339,31 @@ mod tests {
         ));
         std::fs::create_dir_all(&base).unwrap();
         base
+    }
+
+    #[test]
+    fn first_run_seeds_the_starter_presets_and_persists_them() {
+        let dir = tempdir();
+        let file = dir.join("presets.json");
+        assert!(!file.exists());
+
+        let seeded = load_or_seed_presets(&file).unwrap();
+        assert_eq!(seeded.len(), 5);
+        assert_eq!(seeded[0].name, "Plan");
+        assert!(seeded.iter().all(|p| !p.id.is_empty()), "every seeded preset gets an id");
+        assert!(file.exists(), "seeding writes the file so it isn't re-seeded next launch");
+
+        // A second call reads the SAME persisted ids back rather than minting a new set.
+        let again = load_or_seed_presets(&file).unwrap();
+        let ids = |v: &[Preset]| v.iter().map(|p| p.id.clone()).collect::<Vec<_>>();
+        assert_eq!(ids(&again), ids(&seeded));
+    }
+
+    #[test]
+    fn an_existing_empty_presets_file_is_respected_not_reseeded() {
+        let dir = tempdir();
+        let file = dir.join("presets.json");
+        std::fs::write(&file, "[]").unwrap();
+        assert!(load_or_seed_presets(&file).unwrap().is_empty());
     }
 }

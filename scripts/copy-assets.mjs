@@ -1,12 +1,9 @@
-import { mkdir, cp, rename } from "node:fs/promises";
+import { mkdir, cp } from "node:fs/promises";
 
+// tsc emits the renderer's JS (panel.js, bridge.js) into dist/renderer; its static
+// index.html and panel.css are not TypeScript, so copy them alongside. Tauri serves the
+// whole dist/ tree (frontendDist in src-tauri/tauri.conf.json). The tray icon is embedded
+// in the Rust binary (src-tauri/icons/, via include_bytes!), so nothing else is copied here.
 await mkdir("dist/renderer", { recursive: true });
 await cp("src/renderer/index.html", "dist/renderer/index.html");
 await cp("src/renderer/panel.css", "dist/renderer/panel.css");
-
-// Menu-bar/tray icon (+@2x), loaded at runtime by main.ts via nativeImage.createFromPath.
-await cp("assets", "dist/assets", { recursive: true });
-
-// Electron loads ESM preload scripts only when they use the .mjs extension.
-// tsc emits preload.js (ESM, since package.json is "type":"module"), so rename it.
-await rename("dist/preload/preload.js", "dist/preload/preload.mjs");

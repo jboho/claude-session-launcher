@@ -4,8 +4,8 @@
 
 use crate::applescript::launch_mac;
 use crate::config::{
-    config_dir, current_env, directory_exists, home_dir, load_presets, load_settings, presets_path,
-    save_presets, save_settings, settings_path,
+    config_dir, current_env, directory_exists, home_dir, load_or_seed_presets, load_presets,
+    load_settings, presets_path, save_presets, save_settings, settings_path,
 };
 use crate::detect::{detect_claude, detect_terminals};
 use crate::launch::{build_launch_string, resolve_claude_command};
@@ -21,7 +21,7 @@ fn presets_file() -> std::path::PathBuf { presets_path(&current_env(), &home_dir
 fn settings_file() -> std::path::PathBuf { settings_path(&current_env(), &home_dir()) }
 
 #[tauri::command]
-pub fn get_presets() -> Result<Vec<Preset>, String> { load_presets(&presets_file()) }
+pub fn get_presets() -> Result<Vec<Preset>, String> { load_or_seed_presets(&presets_file()) }
 
 #[tauri::command]
 pub fn upsert_preset(preset: Preset) -> Result<Vec<Preset>, String> {

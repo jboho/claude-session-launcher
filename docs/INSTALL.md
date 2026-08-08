@@ -79,16 +79,19 @@ entitlements are needed — unlike the former Electron build, there is no bundle
 Releases are built by GitHub Actions (`.github/workflows/release.yml`) on a version tag:
 
 ```bash
-# bump the version in package.json first (e.g. 0.1.0 -> 0.2.0), commit it, then:
+# bump the version in package.json AND src-tauri/tauri.conf.json first
+# (e.g. 0.1.0 -> 0.2.0), commit it, then:
 git tag v0.2.0
 git push origin v0.2.0
 ```
 
-> **CI is still Electron-based and has not been ported to Tauri yet.** The existing
-> `release.yml`/`ci.yml` build the old electron-builder artifact. Porting them is tracked
-> separately. A signed + notarized Tauri release in CI would import the Developer ID cert
-> from an `APPLE_CERTIFICATE`/`APPLE_CERTIFICATE_PASSWORD` secret and set the same notary
-> env vars as `.env.signing` (API-key method), then run `pnpm tauri:build`.
+`release.yml` runs `pnpm tauri:build` on a macOS runner and attaches the resulting DMG to
+the GitHub Release for that tag. The CI DMG is **unsigned** (no Developer ID cert on the
+runner), so a downloaded copy trips Gatekeeper until signing/notarization secrets are added
+to CI — a signed + notarized CI build would import the Developer ID cert from an
+`APPLE_CERTIFICATE`/`APPLE_CERTIFICATE_PASSWORD` secret and set the same notary env vars as
+`.env.signing` (API-key method) before `pnpm tauri:build`.
 
-Until then, cut releases locally with `pnpm tauri:build:signed` (with `.env.signing`
-populated) and upload the notarized DMG from `src-tauri/target/release/bundle/dmg/`.
+For a **signed + notarized** artifact today, cut the release locally with
+`pnpm tauri:build:signed` (with `.env.signing` populated) and upload the notarized DMG from
+`src-tauri/target/release/bundle/dmg/` to the release.

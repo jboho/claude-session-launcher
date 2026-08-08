@@ -3,63 +3,24 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "main": "dist/main/main.js",
   "description": "A macOS menu-bar widget that launches Claude Code CLI sessions in your terminal with model, permission mode, and effort preselected.",
   "license": "Apache-2.0",
   "author": "Jonathan Boho",
   "repository": "github:jboho/claude-session-launcher",
   "scripts": {
     "build": "tsc && node scripts/copy-assets.mjs",
-    "start": "pnpm build && electron .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "dist:mac": "pnpm build && electron-builder --mac --dir",
-    "dist:mac:dmg": "pnpm build && electron-builder --mac",
     "tauri": "tauri",
     "tauri:dev": "pnpm build && tauri dev",
     "tauri:build": "tauri build",
     "tauri:build:signed": "bash scripts/build-signed.sh"
-  },
-  "build": {
-    "appId": "com.jboho.claude-launcher",
-    "productName": "Claude Launcher",
-    "artifactName": "Claude-Launcher-${version}-${arch}.${ext}",
-    "publish": {
-      "provider": "github",
-      "owner": "jboho",
-      "repo": "claude-session-launcher"
-    },
-    "directories": {
-      "output": "release"
-    },
-    "files": [
-      "dist/**",
-      "!dist/**/*.test.js",
-      "!dist/**/*.test.js.map",
-      "package.json"
-    ],
-    "mac": {
-      "target": "dmg",
-      "category": "public.app-category.developer-tools",
-      "icon": "build/icon.png",
-      "hardenedRuntime": true,
-      "gatekeeperAssess": false,
-      "entitlements": "build/entitlements.mac.plist",
-      "entitlementsInherit": "build/entitlements.mac.inherit.plist",
-      "notarize": false,
-      "extendInfo": {
-        "LSUIElement": true,
-        "NSAppleEventsUsageDescription": "Claude Launcher opens a tab in your terminal (Terminal, iTerm, or Ghostty) and types the claude command you configured."
-      }
-    }
   },
   "devDependencies": {
     "@stryker-mutator/core": "^9.6.1",
     "@stryker-mutator/vitest-runner": "^9.6.1",
     "@tauri-apps/cli": "^2.11.4",
     "@types/node": "^20.0.0",
-    "electron": "^33.0.0",
-    "electron-builder": "^25.1.8",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
   },
