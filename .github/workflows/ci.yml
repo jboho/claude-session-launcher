@@ -11,7 +11,9 @@ permissions:
 
 jobs:
   build-test:
-    runs-on: ubuntu-latest
+    # macos-latest, not ubuntu: the Rust core (src-tauri) uses macOS-only tray/
+    # window APIs and won't compile on Linux — the app itself is macOS-only (v1).
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -21,6 +23,12 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm test
+      - name: cargo test (Rust core — owns launch-argument safety)
+        run: cargo test --manifest-path src-tauri/Cargo.toml

@@ -25,7 +25,7 @@ _(Source: README.md, ROADMAP.md, package.json, src-tauri/)_
 | Frontend build | `tsc` + `scripts/copy-assets.mjs` | — | tsc → `dist/{core,renderer}`; copy-assets copies the renderer `index.html` + `panel.css` (the tray icon is embedded in the Rust binary, not copied) |
 | Packaging | Tauri bundler | — | macOS `.app` + `.dmg`; local builds signed with Developer ID (Team `72FBK9YTA3`) + notarized via `scripts/build-signed.sh` |
 | Package manager | pnpm | 10.33 | use `command pnpm` (a shell `pnpm` wrapper misbehaves non-interactively) |
-| CI | GitHub Actions | — | `ci.yml` (frontend build + TS tests), `release.yml` (tagged Tauri DMG) |
+| CI | GitHub Actions | — | `ci.yml` (macOS runner: frontend build + TS tests + `cargo test`), `release.yml` (tagged Tauri DMG) |
 
 ## Architecture
 
@@ -91,9 +91,11 @@ re-seeded.
 
 Distribution = a **macOS DMG built by the Tauri bundler**. No servers.
 
-- **`ci.yml`** — on PRs + pushes to `main`: ubuntu, pnpm 10.33 / Node 20, `pnpm install
-  --frozen-lockfile` → `pnpm build` → `pnpm test`. The merge gate. *(Currently runs the TS
-  frontend build + Vitest only; it does not yet run `cargo test` — a known gap.)*
+- **`ci.yml`** — on PRs + pushes to `main`: macOS runner (required — the Rust core uses
+  macOS-only tray/window APIs and won't compile on Linux), pnpm 10.33 / Node 20 + Rust
+  toolchain, `pnpm install --frozen-lockfile` → `pnpm build` → `pnpm test` → `cargo test
+  --manifest-path src-tauri/Cargo.toml`. The merge gate, covering both the TS core and the
+  Rust backend that owns launch-argument safety.
 - **`release.yml`** — on a `v*` git tag: macOS runner → Rust toolchain → `pnpm tauri:build` →
   **unsigned** DMG attached to the GitHub Release (`softprops/action-gh-release`, `contents:
   write`). Unsigned because there is no Developer ID cert on the runner.
