@@ -85,13 +85,25 @@ git tag v0.2.0
 git push origin v0.2.0
 ```
 
-`release.yml` runs `pnpm tauri:build` on a macOS runner and attaches the resulting DMG to
-the GitHub Release for that tag. The CI DMG is **unsigned** (no Developer ID cert on the
-runner), so a downloaded copy trips Gatekeeper until signing/notarization secrets are added
-to CI — a signed + notarized CI build would import the Developer ID cert from an
-`APPLE_CERTIFICATE`/`APPLE_CERTIFICATE_PASSWORD` secret and set the same notary env vars as
-`.env.signing` (API-key method) before `pnpm tauri:build`.
+`release.yml` runs on a macOS runner and attaches the resulting DMG to the GitHub Release for
+that tag. It's **signed + notarized when the repo has these Actions secrets configured**
+(**Settings → Secrets and variables → Actions**); with any of them missing it falls back to
+an **unsigned** build, which trips Gatekeeper on a downloaded copy.
 
-For a **signed + notarized** artifact today, cut the release locally with
-`pnpm tauri:build:signed` (with `.env.signing` populated) and upload the notarized DMG from
-`src-tauri/target/release/bundle/dmg/` to the release.
+| Secret | Value |
+|---|---|
+| `APPLE_CERTIFICATE_P12_BASE64` | Your `Developer ID Application` cert, exported from Keychain Access as a `.p12` (File → Export Items, set an export password), then `base64 -i cert.p12 \| pbcopy` |
+| `APPLE_CERTIFICATE_PASSWORD` | The export password you set above |
+| `CI_KEYCHAIN_PASSWORD` | Any random string — password for the throwaway keychain CI creates and deletes per run |
+| `APPLE_API_KEY_P8_BASE64` | Your App Store Connect API key's `.p8` file, `base64 -i AuthKey_XXXXXXXXXX.p8 \| pbcopy` (same key `.env.signing`'s `APPLE_API_KEY_PATH` points at locally) |
+| `APPLE_API_KEY_ID` | The 10-char Key ID from the `.p8` filename / the API key's row at [appstoreconnect.apple.com/access/integrations/api](https://appstoreconnect.apple.com/access/integrations/api) |
+| `APPLE_API_ISSUER` | The Issuer ID (UUID) shown on that same page |
+
+CI imports the cert into a throwaway keychain and decodes the API key, then runs
+`scripts/build-signed.sh` — the same script local signed builds use, so CI and local builds
+share one code path. Never commit any of the values above; they exist only as encrypted
+repo secrets.
+
+Without those secrets, cut a **signed + notarized** artifact locally instead:
+`pnpm tauri:build:signed` (with `.env.signing` populated), then upload the DMG from
+`src-tauri/target/release/bundle/dmg/` to the release by hand.

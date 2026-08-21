@@ -96,9 +96,12 @@ Distribution = a **macOS DMG built by the Tauri bundler**. No servers.
   toolchain, `pnpm install --frozen-lockfile` → `pnpm build` → `pnpm test` → `cargo test
   --manifest-path src-tauri/Cargo.toml`. The merge gate, covering both the TS core and the
   Rust backend that owns launch-argument safety.
-- **`release.yml`** — on a `v*` git tag: macOS runner → Rust toolchain → `pnpm tauri:build` →
-  **unsigned** DMG attached to the GitHub Release (`softprops/action-gh-release`, `contents:
-  write`). Unsigned because there is no Developer ID cert on the runner.
+- **`release.yml`** — on a `v*` git tag: macOS runner → Rust toolchain → **signed + notarized**
+  via `scripts/build-signed.sh` when the repo's signing secrets are set (imports the Developer
+  ID cert into a throwaway keychain + decodes the App Store Connect API key; see
+  `docs/INSTALL.md` "Releasing (maintainers)" for the exact secret names), else falls back to
+  an unsigned `pnpm tauri:build`. DMG attached to the GitHub Release
+  (`softprops/action-gh-release`, `contents: write`).
 - **Local signed build:** `pnpm tauri:build:signed` (`scripts/build-signed.sh`) — signs with the
   Developer ID auto-discovered from the keychain and, if `.env.signing` holds notary credentials,
   notarizes + staples both the `.app` and the `.dmg`, then verifies. Artifacts land under
