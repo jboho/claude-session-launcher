@@ -1,0 +1,2 @@
+# Gitignored files copied into new git worktrees so release builds can sign.
+.env.signing
