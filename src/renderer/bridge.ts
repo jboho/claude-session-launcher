@@ -52,6 +52,8 @@ function installTauriBridge(): void {
     detectClaude: (): Promise<{ found: boolean; path?: string }> => invoke("claude_detect"),
     detectTerminals: (): Promise<string[]> => invoke("terminals_detect"),
     setHotkey: (accelerator: string): Promise<string> => invoke("set_hotkey", { accelerator }),
+    addStarterPresets: (): Promise<Preset[]> => invoke("add_starter_presets"),
+    runAutoModeCritique: (): Promise<void> => invoke("run_auto_mode_critique"),
   };
 }
 

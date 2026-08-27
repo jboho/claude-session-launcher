@@ -3,7 +3,8 @@ import { buildLaunchString, shellQuote, psQuote, buildWinLaunchString } from "./
 import type { LaunchSpec } from "./types.js";
 
 const spec = (over: Partial<LaunchSpec> = {}): LaunchSpec => ({
-  model: "", mode: "", effort: "", wd: "", cmd: "", ...over,
+  model: "", mode: "", effort: "", wd: "", cmd: "",
+  worktree: false, worktreeName: "", outputStyle: "", thinkingBudget: "", ...over,
 });
 
 describe("shellQuote", () => {
@@ -94,6 +95,46 @@ describe("buildLaunchString", () => {
   test("wd and cmd separators compose in the right order", () => {
     expect(buildLaunchString(spec({ model: "opus", wd: "~/Code", cmd: "/wrap" })))
       .toBe("cd -- '~/Code' && claude --model opus -- '/wrap'");
+  });
+
+  test("a bare worktree flag is emitted after the model", () => {
+    expect(buildLaunchString(spec({ model: "opus", mode: "auto", worktree: true })))
+      .toBe("claude --model opus --worktree --permission-mode auto");
+  });
+
+  test("a named worktree passes the name, quoted only when not bare-safe", () => {
+    expect(buildLaunchString(spec({ model: "opus", worktree: true, worktreeName: "wip" })))
+      .toBe("claude --model opus --worktree wip");
+    // A branch-style name has a '/', which isn't a bare token, so it is single-quoted.
+    expect(buildLaunchString(spec({ model: "opus", worktree: true, worktreeName: "feat/foo" })))
+      .toBe("claude --model opus --worktree 'feat/foo'");
+  });
+
+  test("worktree false never emits the flag even with a name set", () => {
+    expect(buildLaunchString(spec({ model: "opus", worktree: false, worktreeName: "x" })))
+      .toBe("claude --model opus");
+  });
+
+  test("an output style becomes a --settings JSON flag", () => {
+    expect(buildLaunchString(spec({ model: "opus", outputStyle: "Concise" })))
+      .toBe(`claude --model opus --settings '{"outputStyle":"Concise"}'`);
+  });
+
+  test("a thinking budget prepends the env var before claude (after cd)", () => {
+    expect(buildLaunchString(spec({ model: "opus", thinkingBudget: "0" })))
+      .toBe("MAX_THINKING_TOKENS=0 claude --model opus");
+    expect(buildLaunchString(spec({ model: "opus", wd: "~/Code", thinkingBudget: "0" })))
+      .toBe("cd -- '~/Code' && MAX_THINKING_TOKENS=0 claude --model opus");
+  });
+
+  test("the full combined invocation matches the Rust builder ordering", () => {
+    expect(buildLaunchString(spec({
+      model: "opus", mode: "auto", effort: "high", wd: "~/Code", cmd: "/wrap",
+      worktree: true, worktreeName: "feat/x", outputStyle: "Concise", thinkingBudget: "0",
+    }))).toBe(
+      `cd -- '~/Code' && MAX_THINKING_TOKENS=0 claude --model opus --worktree 'feat/x' ` +
+        `--permission-mode auto --effort high --settings '{"outputStyle":"Concise"}' -- '/wrap'`,
+    );
   });
 });
 

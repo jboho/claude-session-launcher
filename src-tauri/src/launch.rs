@@ -67,6 +67,79 @@ fn assert_safe_model(value: &str) -> Result<(), String> {
     }
 }
 
+/// A worktree name reaches `--worktree <name>`. Branch-like names add `/` to the dial
+/// charset, but a leading `-` is still forbidden so the value can never be read as a flag;
+/// the builder quotes it via `shell_quote_if_needed`. Empty is allowed — a bare `--worktree`
+/// lets the CLI auto-generate the name.
+pub fn is_safe_worktree_name(value: &str) -> bool {
+    value.is_empty()
+        || (!value.starts_with('-')
+            && value
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_' | '/')))
+}
+
+/// An output-style name is embedded as a JSON string value in `--settings`; restrict it to a
+/// plain charset (letters, digits, space, `-`, `_`) so it can neither break the JSON nor the
+/// shell. Empty = no `--settings` emitted.
+pub fn is_safe_output_style(value: &str) -> bool {
+    value
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || matches!(c, ' ' | '-' | '_'))
+}
+
+/// A thinking budget becomes `MAX_THINKING_TOKENS=<value>`; it must be a decimal token (or
+/// empty to omit). "0" turns thinking off.
+pub fn is_safe_thinking_budget(value: &str) -> bool {
+    value.is_empty() || value.chars().all(|c| c.is_ascii_digit())
+}
+
+fn assert_safe_worktree_name(value: &str) -> Result<(), String> {
+    if is_safe_worktree_name(value) {
+        Ok(())
+    } else {
+        Err(format!(
+            "Unsafe worktree name: {value:?} — only letters, digits, '.', '-', '_', '/' are allowed, and it may not start with '-'."
+        ))
+    }
+}
+
+fn assert_safe_output_style(value: &str) -> Result<(), String> {
+    if is_safe_output_style(value) {
+        Ok(())
+    } else {
+        Err(format!(
+            "Unsafe output style: {value:?} — only letters, digits, spaces, '-', '_' are allowed."
+        ))
+    }
+}
+
+fn assert_safe_thinking_budget(value: &str) -> Result<(), String> {
+    if is_safe_thinking_budget(value) {
+        Ok(())
+    } else {
+        Err(format!(
+            "Unsafe thinking budget: {value:?} — must be a whole number."
+        ))
+    }
+}
+
+/// Render ordered `KEY=VALUE` env assignments into a prefix that ends in a single space (or
+/// "" when empty), to sit immediately before the `claude` token so the vars scope to that
+/// process. Values are quoted only when not bare-safe, like the model token.
+fn env_prefix(env: &[(&str, &str)]) -> String {
+    if env.is_empty() {
+        return String::new();
+    }
+    let mut s = env
+        .iter()
+        .map(|(k, v)| format!("{k}={}", shell_quote_if_needed(v)))
+        .collect::<Vec<_>>()
+        .join(" ");
+    s.push(' ');
+    s
+}
+
 /// The token that stands in for `claude`: a quoted explicit path, or the bare command.
 pub fn resolve_claude_command(binary: &str) -> String {
     let b = binary.trim();
@@ -83,13 +156,44 @@ pub fn resolve_claude_command(binary: &str) -> String {
 /// parsed as a positional argument by `claude`/`cd`, never as an option — do not remove
 /// either `--` as a "simplification".
 pub fn build_launch_string(spec: &LaunchSpec, claude_cmd: &str) -> Result<String, String> {
+    build_launch_string_with_env(spec, claude_cmd, &[])
+}
+
+/// As `build_launch_string`, but prepends `extra_env` (e.g. the fork-subagent setting,
+/// derived from `Settings` by the caller) as `KEY=VALUE` assignments before the spec's own
+/// env (thinking budget). Kept separate so the 2-arg form stays the single quoting authority
+/// for callers that have no settings-derived env.
+pub fn build_launch_string_with_env(
+    spec: &LaunchSpec,
+    claude_cmd: &str,
+    extra_env: &[(&str, &str)],
+) -> Result<String, String> {
     assert_safe_model(spec.model.trim())?;
     assert_safe_dial("mode", spec.mode.trim())?;
     assert_safe_dial("effort", spec.effort.trim())?;
+    assert_safe_worktree_name(spec.worktree_name.trim())?;
+    assert_safe_output_style(spec.output_style.trim())?;
+    assert_safe_thinking_budget(spec.thinking_budget.trim())?;
+
+    // Env scoped to the claude process: caller-supplied (fork-subagent) first, then the
+    // spec's thinking budget.
+    let mut env: Vec<(&str, &str)> = extra_env.to_vec();
+    let thinking = spec.thinking_budget.trim();
+    if !thinking.is_empty() {
+        env.push(("MAX_THINKING_TOKENS", thinking));
+    }
 
     let mut parts = vec![claude_cmd.to_string()];
     if !spec.model.trim().is_empty() {
         parts.push(format!("--model {}", shell_quote_if_needed(spec.model.trim())));
+    }
+    if spec.worktree {
+        let name = spec.worktree_name.trim();
+        if name.is_empty() {
+            parts.push("--worktree".to_string());
+        } else {
+            parts.push(format!("--worktree {}", shell_quote_if_needed(name)));
+        }
     }
     if !spec.mode.trim().is_empty() {
         parts.push(format!("--permission-mode {}", spec.mode.trim()));
@@ -97,11 +201,23 @@ pub fn build_launch_string(spec: &LaunchSpec, claude_cmd: &str) -> Result<String
     if !spec.effort.trim().is_empty() {
         parts.push(format!("--effort {}", spec.effort.trim()));
     }
+    let style = spec.output_style.trim();
+    if !style.is_empty() {
+        // Build the JSON with serde_json (never string concatenation) so the value is
+        // always well-formed, then single-quote the whole object for the shell.
+        let mut obj = serde_json::Map::new();
+        obj.insert(
+            "outputStyle".to_string(),
+            serde_json::Value::String(style.to_string()),
+        );
+        let json = serde_json::Value::Object(obj).to_string();
+        parts.push(format!("--settings {}", shell_quote(&json)));
+    }
     if !spec.cmd.trim().is_empty() {
         parts.push("--".to_string());
         parts.push(shell_quote(spec.cmd.trim()));
     }
-    let invocation = parts.join(" ");
+    let invocation = format!("{}{}", env_prefix(&env), parts.join(" "));
 
     Ok(if spec.wd.trim().is_empty() {
         invocation
@@ -119,6 +235,7 @@ mod tests {
         LaunchSpec {
             model: model.into(), mode: mode.into(), effort: effort.into(),
             wd: wd.into(), cmd: cmd.into(),
+            ..Default::default()
         }
     }
 
@@ -424,5 +541,167 @@ mod tests {
     fn a_wd_of_bare_hyphen_is_forced_positional_for_cd() {
         let s = spec("", "", "", "-", "");
         assert_eq!(build_launch_string(&s, "claude").unwrap(), "cd -- '-' && claude");
+    }
+
+    // --- Worktree (`--worktree [name]`) ---
+
+    #[test]
+    fn a_bare_worktree_flag_is_emitted_after_the_model() {
+        let s = LaunchSpec { worktree: true, ..spec("opus", "auto", "high", "", "") };
+        assert_eq!(
+            build_launch_string(&s, "claude").unwrap(),
+            "claude --model opus --worktree --permission-mode auto --effort high"
+        );
+    }
+
+    #[test]
+    fn a_named_worktree_passes_the_name_quoted_only_when_not_bare_safe() {
+        let bare = LaunchSpec { worktree: true, worktree_name: "wip".into(), ..spec("opus", "", "", "", "") };
+        assert_eq!(
+            build_launch_string(&bare, "claude").unwrap(),
+            "claude --model opus --worktree wip"
+        );
+        // A branch-style name has a '/', which isn't a bare token, so it is single-quoted.
+        let slashed = LaunchSpec { worktree: true, worktree_name: "feat/foo".into(), ..spec("opus", "", "", "", "") };
+        assert_eq!(
+            build_launch_string(&slashed, "claude").unwrap(),
+            "claude --model opus --worktree 'feat/foo'"
+        );
+    }
+
+    #[test]
+    fn worktree_false_never_emits_the_flag_even_with_a_name_set() {
+        let s = LaunchSpec { worktree: false, worktree_name: "x".into(), ..spec("opus", "", "", "", "") };
+        assert_eq!(build_launch_string(&s, "claude").unwrap(), "claude --model opus");
+    }
+
+    #[test]
+    fn worktree_name_charset_allows_branch_slashes_but_rejects_a_leading_hyphen() {
+        assert!(is_safe_worktree_name(""));
+        assert!(is_safe_worktree_name("feat/foo-bar_1.2"));
+        assert!(!is_safe_worktree_name("-rf"));
+        assert!(!is_safe_worktree_name("a b"));
+        assert!(!is_safe_worktree_name("a;id"));
+    }
+
+    #[test]
+    fn a_hostile_worktree_name_is_refused() {
+        let s = LaunchSpec { worktree: true, worktree_name: "-rf".into(), ..spec("opus", "", "", "", "") };
+        let err = build_launch_string(&s, "claude").unwrap_err();
+        assert!(err.contains("worktree"), "error should name the offending field: {err}");
+    }
+
+    // --- Output style (`--settings '{"outputStyle":"…"}'`) ---
+
+    #[test]
+    fn an_output_style_becomes_a_settings_json_flag() {
+        let s = LaunchSpec { output_style: "Concise".into(), ..spec("opus", "", "", "", "") };
+        assert_eq!(
+            build_launch_string(&s, "claude").unwrap(),
+            r#"claude --model opus --settings '{"outputStyle":"Concise"}'"#
+        );
+    }
+
+    #[test]
+    fn a_blank_output_style_emits_no_settings_flag() {
+        let s = spec("opus", "", "", "", "");
+        assert!(!build_launch_string(&s, "claude").unwrap().contains("--settings"));
+    }
+
+    #[test]
+    fn output_style_charset_allows_spaces_but_rejects_metacharacters() {
+        assert!(is_safe_output_style(""));
+        assert!(is_safe_output_style("Concise"));
+        assert!(is_safe_output_style("My Style-1"));
+        assert!(!is_safe_output_style(r#"a"}; rm -rf /"#));
+        assert!(!is_safe_output_style("a$b"));
+    }
+
+    #[test]
+    fn a_hostile_output_style_is_refused_before_it_reaches_the_json() {
+        let s = LaunchSpec { output_style: r#"x"}"#.into(), ..spec("opus", "", "", "", "") };
+        let err = build_launch_string(&s, "claude").unwrap_err();
+        assert!(err.contains("output style"), "error should name the offending field: {err}");
+    }
+
+    // --- Thinking budget (MAX_THINKING_TOKENS env prefix) ---
+
+    #[test]
+    fn a_thinking_budget_prepends_the_env_var_before_claude() {
+        let s = LaunchSpec { thinking_budget: "0".into(), ..spec("opus", "auto", "", "", "") };
+        assert_eq!(
+            build_launch_string(&s, "claude").unwrap(),
+            "MAX_THINKING_TOKENS=0 claude --model opus --permission-mode auto"
+        );
+    }
+
+    #[test]
+    fn a_thinking_budget_sits_after_cd_and_before_claude_when_a_wd_is_set() {
+        let s = LaunchSpec { thinking_budget: "0".into(), ..spec("opus", "", "", "~/Code", "") };
+        assert_eq!(
+            build_launch_string(&s, "claude").unwrap(),
+            "cd -- '~/Code' && MAX_THINKING_TOKENS=0 claude --model opus"
+        );
+    }
+
+    #[test]
+    fn a_blank_thinking_budget_prepends_nothing() {
+        let s = spec("opus", "", "", "", "");
+        assert_eq!(build_launch_string(&s, "claude").unwrap(), "claude --model opus");
+    }
+
+    #[test]
+    fn thinking_budget_charset_allows_only_digits() {
+        assert!(is_safe_thinking_budget(""));
+        assert!(is_safe_thinking_budget("0"));
+        assert!(is_safe_thinking_budget("2048"));
+        assert!(!is_safe_thinking_budget("-1"));
+        assert!(!is_safe_thinking_budget("1k"));
+        assert!(!is_safe_thinking_budget("0; rm -rf /"));
+    }
+
+    #[test]
+    fn a_non_numeric_thinking_budget_is_refused() {
+        let s = LaunchSpec { thinking_budget: "lots".into(), ..spec("opus", "", "", "", "") };
+        let err = build_launch_string(&s, "claude").unwrap_err();
+        assert!(err.contains("thinking budget"), "error should name the offending field: {err}");
+    }
+
+    // --- Caller-supplied env (fork-subagent) via build_launch_string_with_env ---
+
+    #[test]
+    fn extra_env_is_prepended_and_ordered_before_the_spec_thinking_budget() {
+        let s = LaunchSpec { thinking_budget: "0".into(), ..spec("opus", "", "", "", "") };
+        assert_eq!(
+            build_launch_string_with_env(&s, "claude", &[("CLAUDE_CODE_FORK_SUBAGENT", "0")]).unwrap(),
+            "CLAUDE_CODE_FORK_SUBAGENT=0 MAX_THINKING_TOKENS=0 claude --model opus"
+        );
+    }
+
+    #[test]
+    fn extra_env_alone_prepends_without_a_thinking_budget() {
+        let s = spec("opus", "auto", "", "", "");
+        assert_eq!(
+            build_launch_string_with_env(&s, "claude", &[("CLAUDE_CODE_FORK_SUBAGENT", "1")]).unwrap(),
+            "CLAUDE_CODE_FORK_SUBAGENT=1 claude --model opus --permission-mode auto"
+        );
+    }
+
+    // --- Everything at once: env prefix, cd, model, worktree, mode, effort, settings, cmd ---
+
+    #[test]
+    fn the_full_combined_invocation_orders_every_piece_deterministically() {
+        let s = LaunchSpec {
+            worktree: true,
+            worktree_name: "feat/x".into(),
+            output_style: "Concise".into(),
+            thinking_budget: "0".into(),
+            ..spec("opus", "auto", "high", "~/Code", "/wrap")
+        };
+        assert_eq!(
+            build_launch_string(&s, "claude").unwrap(),
+            "cd -- '~/Code' && MAX_THINKING_TOKENS=0 claude --model opus --worktree 'feat/x' \
+             --permission-mode auto --effort high --settings '{\"outputStyle\":\"Concise\"}' -- '/wrap'"
+        );
     }
 }
