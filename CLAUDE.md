@@ -14,6 +14,24 @@ platform; a Windows backend is not built yet (see `ROADMAP.md`). Local dir and G
 2026-07-28). Licensed Apache-2.0.
 _(Source: README.md, ROADMAP.md, package.json, src-tauri/)_
 
+## Common commands
+
+Typed the way I run them. Use `command pnpm` — a shell `pnpm` wrapper misbehaves non-interactively.
+
+```bash
+# One TS test file (fast loop):
+command pnpm exec vitest run src/core/<file>.test.ts --reporter=dot
+
+# All TS tests:
+command pnpm test
+
+# One Rust module's tests:
+cargo test --manifest-path src-tauri/Cargo.toml <module>:: 2>&1 | tail -40
+
+# Typecheck / build the frontend (renderer has no test harness — this is its gate):
+command pnpm build
+```
+
 ## Tech Stack
 
 | Category | Technology | Version | Notes |
