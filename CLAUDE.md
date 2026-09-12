@@ -1,7 +1,10 @@
 # Project Knowledge — Claude Launcher (claude-session-launcher)
 
-> Bootstrapped by knowledge-bootstrap on 2026-07-24; rewritten 2026-08-08 for the Tauri
-> port (the Electron app was retired). Verify against actual code before relying on any detail.
+Generic engineering standards live in the global `~/.claude/CLAUDE.md`. Rewritten 2026-08-08 for the Tauri port (the Electron app was retired). Verify against actual code before relying on any detail.
+
+**Cold detail lives in referenced docs — read on demand, not loaded every session:**
+- CI, release flow, install, signing/notarization, infrastructure → [`.ai/docs/notes/deployment-and-signing.md`](.ai/docs/notes/deployment-and-signing.md)
+- Runtime/build gotchas (tray, panel sizing, renderer module graph, IPC bridge, iTerm AppleScript) → [`.ai/docs/notes/operational-knowledge.md`](.ai/docs/notes/operational-knowledge.md)
 
 ## Overview
 
@@ -105,61 +108,17 @@ run (no `presets.json` yet) a starter set is seeded and written — `config.rs::
 / `starter_presets`, behind the `get_presets` command; an existing (even empty) file is never
 re-seeded.
 
-## Deployment Pipeline
+Distribution = a macOS DMG built by the Tauri bundler; no servers. CI (`ci.yml`), tagged release (`release.yml`), local signed builds, install, and signing/notarization are all in the deployment note.
 
-Distribution = a **macOS DMG built by the Tauri bundler**. No servers.
-
-- **`ci.yml`** — on PRs + pushes to `main`: macOS runner (required — the Rust core uses
-  macOS-only tray/window APIs and won't compile on Linux), pnpm 10.33 / Node 20 + Rust
-  toolchain, `pnpm install --frozen-lockfile` → `pnpm build` → `pnpm test` → `cargo test
-  --manifest-path src-tauri/Cargo.toml`. The merge gate, covering both the TS core and the
-  Rust backend that owns launch-argument safety.
-- **`release.yml`** — on a `v*` git tag: macOS runner → Rust toolchain → **signed + notarized**
-  via `scripts/build-signed.sh` when the repo's signing secrets are set (imports the Developer
-  ID cert into a throwaway keychain + decodes the App Store Connect API key; see
-  `docs/INSTALL.md` "Releasing (maintainers)" for the exact secret names), else falls back to
-  an unsigned `pnpm tauri:build`. DMG attached to the GitHub Release
-  (`softprops/action-gh-release`, `contents: write`).
-- **Local signed build:** `pnpm tauri:build:signed` (`scripts/build-signed.sh`) — signs with the
-  Developer ID auto-discovered from the keychain and, if `.env.signing` holds notary credentials,
-  notarizes + staples both the `.app` and the `.dmg`, then verifies. Artifacts land under
-  `src-tauri/target/release/bundle/{macos,dmg}/`.
-
-**Release flow:** bump `version` in **both** `package.json` and `src-tauri/tauri.conf.json` →
-commit → `git tag vX.Y.Z && git push origin vX.Y.Z` → CI publishes the unsigned DMG. For a signed
-+ notarized artifact, build locally with `tauri:build:signed` and upload that DMG. (No release cut
-yet; version `0.1.0`.)
-
-**Install:** download the DMG → drag to Applications. See `docs/INSTALL.md`. A notarized DMG opens
-cleanly; an unsigned one trips Gatekeeper (right-click → Open, or `xattr -dr com.apple.quarantine`).
-A locally-built `.app` carries no quarantine flag.
-
-**Code signing / notarization.** Local builds sign via keychain auto-discovery of the `Developer
-ID Application: Jonathan Boho (72FBK9YTA3)` cert (valid to 2027-02-01); Tauri applies the hardened
-runtime automatically. Entitlements: `src-tauri/entitlements.plist` (minimal — only
-`com.apple.security.automation.apple-events`, for the terminal integration). Notary credentials
-live in a gitignored `.env.signing` (see `.env.signing.example`).
-
-**Why signing matters here:** the app's Automation (Apple Events) TCC grant is keyed to the code
-signature. A stable Developer ID makes the "control iTerm" grant persist across rebuilds/upgrades;
-an unstable identity re-prompts every install.
-
-## Infrastructure
-
-None — this is a desktop app. The only hosted surface is **GitHub Releases** (artifact host) and
-**GitHub Actions** (CI/release). No cloud accounts, databases, or services.
-
-## Environment Variables
+## Environment Variables (runtime)
 
 | Variable | Purpose | Where Set |
 |----------|---------|-----------|
 | `CLAUDE_LAUNCHER_CONFIG` | Override the config file location (points at a `presets.json`; its dir holds `settings.json`) | user shell / dotfiles |
 | `XDG_CONFIG_HOME` | Alternate base for the config dir (else `~/.config`) | user shell |
 | `SHELL` | Login shell used for `claude` detection (`$SHELL -lc 'command -v claude'`, falls back to `/bin/zsh`) | OS |
-| `APPLE_SIGNING_IDENTITY` | Override the auto-detected Developer ID identity for `build-signed.sh` | shell / `.env.signing` |
-| `APPLE_API_KEY` / `APPLE_API_ISSUER` / `APPLE_API_KEY_PATH` | App Store Connect API-key notarization (preferred) | gitignored `.env.signing` |
-| `APPLE_ID` / `APPLE_PASSWORD` / `APPLE_TEAM_ID` | App-specific-password notarization (fallback) | gitignored `.env.signing` |
-| `GITHUB_TOKEN` | `softprops/action-gh-release` upload | `release.yml` (Actions-provided) |
+
+Signing/notarization/CI env vars are in the deployment note.
 
 ## Key Conventions
 
@@ -181,16 +140,7 @@ Roadmap in `ROADMAP.md`.
 
 Contributors: Jonathan Boho (sole author). Release cadence: none yet (no tags; `0.1.0` unreleased).
 
-## Operational Knowledge
-
-- **Tray icon is embedded in the binary** — `lib.rs` loads it via `include_bytes!("../icons/trayTemplate.png")` and `icon_as_template(true)` (macOS tints a template image). The app is menu-bar-only (`LSUIElement` in `src-tauri/Info.plist`) — if a notch/menu-bar manager hides the tray icon, the global hotkey (⌥W default) is the only fallback to reopen the panel.
-- **Panel size was measured inside the real WKWebView** — the window is 460x640 (`src-tauri/tauri.conf.json`); the settings sheet caps at `max-height:96vh` so its ~595px of content fits without a scrollbar (PR #5). Re-measure in-webview (or against the built renderer at 460x640) before changing either.
-- **Tauri serves the whole `dist/` tree** (`frontendDist: "../dist"`) so the renderer's native-ESM module graph (`renderer/panel.js` → `../core/*.js`) resolves. Don't flatten the output.
-- **`bridge.ts` calls `window.__TAURI_INTERNALS__.invoke` directly** rather than importing from `@tauri-apps/api/core`: the renderer has no bundler and loads native ES modules, which can't resolve the bare `@tauri-apps/api/core` specifier. The direct call is the same passthrough. Command names + arg keys must match the `#[tauri::command]` signatures in `commands.rs`/`lib.rs`.
-- **iTerm AppleScript has two traps** (see `src-tauri/src/applescript.rs`): `current window` is `missing value` when there is no key window (cold start right after `activate`) — reading it fails with `-1728`; and `create tab with default profile` returns `missing value` (does not error) when the target window is hidden/minimized. Never re-derive `current window` after creating — hold what `create …` returned, and treat "no session" as "open a new window".
-- **Notarize the DMG separately** — Tauri notarizes + staples the `.app`, then builds the DMG *around* it, so the DMG itself gets no ticket and a *downloaded* DMG trips Gatekeeper. `build-signed.sh` submits + staples the DMG on its own after the Tauri build.
-- **This dev environment:** `gh`'s API can time out reaching `api.github.com` → use the GitHub MCP for PRs; SSH `git push` needs the sandbox disabled.
-- **Claude Code launch surface** (drives the dials): `claude --model <alias|id> --permission-mode <plan|auto|acceptEdits|manual|default> --effort <low|medium|high|xhigh|max>`. **Haiku** rejects `--effort` and the autonomous modes (`auto`); the UI greys those out. `bypassPermissions` is org-locked (MDM) and removed from the UI. No `--fast` launch flag (fast is the in-session `/fast` toggle).
+Runtime/build gotchas (tray, panel sizing, renderer module graph, IPC bridge, iTerm AppleScript, the Claude Code launch-flag surface that drives the dials) are in the operational-knowledge note.
 
 ## Cross-Project Relationships
 
