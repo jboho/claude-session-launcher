@@ -35,6 +35,10 @@ cargo test --manifest-path src-tauri/Cargo.toml <module>:: 2>&1 | tail -40
 command pnpm build
 ```
 
+`cargo test` needs `dist/` to exist first — `tauri::generate_context!` embeds `frontendDist`
+(`../dist`) at compile time, so run `command pnpm build` before `cargo test` in a fresh
+checkout/worktree (else it fails with "frontendDist … doesn't exist", not a test failure).
+
 ## Tech Stack
 
 | Category | Technology | Version | Notes |

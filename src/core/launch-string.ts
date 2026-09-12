@@ -39,10 +39,20 @@ export function psQuoteIfNeeded(s: string): string {
 export function buildLaunchString(spec: LaunchSpec, claudeCmd = "claude"): string {
   const parts = [claudeCmd];
   if (spec.model.trim()) parts.push("--model", shellQuoteIfNeeded(spec.model.trim()));
+  if (spec.worktree) {
+    parts.push("--worktree");
+    if (spec.worktreeName.trim()) parts.push(shellQuoteIfNeeded(spec.worktreeName.trim()));
+  }
   if (spec.mode.trim()) parts.push("--permission-mode", spec.mode.trim());
   if (spec.effort.trim()) parts.push("--effort", spec.effort.trim());
+  if (spec.outputStyle.trim()) {
+    parts.push("--settings", shellQuote(JSON.stringify({ outputStyle: spec.outputStyle.trim() })));
+  }
   if (spec.cmd.trim()) parts.push("--", shellQuote(spec.cmd.trim()));
-  const claudeInvocation = parts.join(" ");
+  // Thinking budget scopes to the claude process: sits after `cd && `, before `claude`.
+  const tb = spec.thinkingBudget.trim();
+  const env = tb ? `MAX_THINKING_TOKENS=${shellQuoteIfNeeded(tb)} ` : "";
+  const claudeInvocation = env + parts.join(" ");
   return spec.wd.trim() ? `cd -- ${shellQuote(spec.wd.trim())} && ${claudeInvocation}` : claudeInvocation;
 }
 
@@ -67,10 +77,20 @@ export function psQuote(s: string): string {
 export function buildWinLaunchString(spec: LaunchSpec, claudeCmd = "claude"): string {
   const parts = [claudeCmd];
   if (spec.model.trim()) parts.push("--model", psQuoteIfNeeded(spec.model.trim()));
+  if (spec.worktree) {
+    parts.push("--worktree");
+    if (spec.worktreeName.trim()) parts.push(psQuoteIfNeeded(spec.worktreeName.trim()));
+  }
   if (spec.mode.trim()) parts.push("--permission-mode", spec.mode.trim());
   if (spec.effort.trim()) parts.push("--effort", spec.effort.trim());
+  if (spec.outputStyle.trim()) {
+    parts.push("--settings", psQuote(JSON.stringify({ outputStyle: spec.outputStyle.trim() })));
+  }
   if (spec.cmd.trim()) parts.push("--", psQuote(spec.cmd.trim()));
-  const claudeInvocation = parts.join(" ");
+  // PowerShell scopes an env var with `$env:`; harmless in a fresh session.
+  const tb = spec.thinkingBudget.trim();
+  const env = tb ? `$env:MAX_THINKING_TOKENS=${psQuoteIfNeeded(tb)}; ` : "";
+  const claudeInvocation = env + parts.join(" ");
   return spec.wd.trim()
     ? `Set-Location -LiteralPath ${psQuote(spec.wd.trim())}; ${claudeInvocation}`
     : claudeInvocation;

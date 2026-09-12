@@ -5,16 +5,25 @@
 use crate::applescript::launch_mac;
 use crate::config::{
     config_dir, current_env, directory_exists, home_dir, load_or_seed_presets, load_presets,
-    load_settings, presets_path, save_presets, save_settings, settings_path,
+    load_settings, presets_path, save_presets, save_settings, settings_path, starter_presets,
 };
 use crate::detect::{detect_claude, detect_terminals};
-use crate::launch::{build_launch_string, resolve_claude_command};
+use crate::launch::{build_launch_string_with_env, resolve_claude_command};
 use crate::types::{LaunchSpec, Preset, Settings};
 
 /// Single source of truth for "what will actually run" — used by both launch and preview,
-/// so the preview can never drift from the command.
+/// so the preview can never drift from the command. The persistent fork-subagent setting is
+/// injected here as an env prefix; the per-launch env (thinking budget) is added by the
+/// builder from the spec.
 pub fn compose_launch_string(spec: &LaunchSpec, settings: &Settings) -> Result<String, String> {
-    build_launch_string(spec, &resolve_claude_command(&settings.claude_binary))
+    let claude = resolve_claude_command(&settings.claude_binary);
+    let mut extra_env: Vec<(&str, &str)> = Vec::new();
+    match settings.fork_subagent.trim() {
+        "on" => extra_env.push(("CLAUDE_CODE_FORK_SUBAGENT", "1")),
+        "off" => extra_env.push(("CLAUDE_CODE_FORK_SUBAGENT", "0")),
+        _ => {}
+    }
+    build_launch_string_with_env(spec, &claude, &extra_env)
 }
 
 fn presets_file() -> std::path::PathBuf { presets_path(&current_env(), &home_dir()) }
@@ -106,6 +115,33 @@ pub fn ensure_config_dir() -> Result<String, String> {
     Ok(dir.display().to_string())
 }
 
+/// Append any starter presets whose name is not already present (dedupe by name). First-run
+/// seeding only fires when there is no presets file at all, so this lets an existing install
+/// pull in starters added after it was first set up.
+#[tauri::command]
+pub fn add_starter_presets() -> Result<Vec<Preset>, String> {
+    use std::collections::HashSet;
+    let mut presets = load_presets(&presets_file())?;
+    let existing: HashSet<String> = presets.iter().map(|p| p.name.clone()).collect();
+    for sp in starter_presets() {
+        if !existing.contains(&sp.name) {
+            presets.push(sp);
+        }
+    }
+    save_presets(&presets, &presets_file())?;
+    Ok(presets)
+}
+
+/// Open a terminal running `claude auto-mode critique` (AI feedback on the user's custom
+/// auto-mode rules). The command is composed server-side — the renderer passes no argument —
+/// so this is not an arbitrary-command execution surface.
+#[tauri::command]
+pub fn run_auto_mode_critique() -> Result<(), String> {
+    let settings = load_settings(&settings_file())?;
+    let claude = resolve_claude_command(&settings.claude_binary);
+    launch_mac(&format!("{claude} auto-mode critique"), &settings.terminal)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -113,7 +149,7 @@ mod tests {
 
     fn spec() -> LaunchSpec {
         LaunchSpec { model: "opus".into(), mode: "auto".into(), effort: "high".into(),
-                     wd: String::new(), cmd: String::new() }
+                     wd: String::new(), cmd: String::new(), ..Default::default() }
     }
 
     #[test]
@@ -123,6 +159,19 @@ mod tests {
             compose_launch_string(&spec(), &settings).unwrap(),
             "claude --model opus --permission-mode auto --effort high"
         );
+    }
+
+    #[test]
+    fn the_fork_subagent_setting_prepends_the_env_var_in_the_composed_command() {
+        let off = Settings { fork_subagent: "off".into(), ..Settings::default() };
+        assert_eq!(
+            compose_launch_string(&spec(), &off).unwrap(),
+            "CLAUDE_CODE_FORK_SUBAGENT=0 claude --model opus --permission-mode auto --effort high"
+        );
+        let on = Settings { fork_subagent: "on".into(), ..Settings::default() };
+        assert!(compose_launch_string(&spec(), &on).unwrap().starts_with("CLAUDE_CODE_FORK_SUBAGENT=1 "));
+        // An unset/blank value leaves the CLI default untouched (no env prefix).
+        assert!(!compose_launch_string(&spec(), &Settings::default()).unwrap().contains("FORK_SUBAGENT"));
     }
 
     #[test]

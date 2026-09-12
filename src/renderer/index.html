@@ -20,12 +20,19 @@
       <div class="group"><span class="glabel">Model</span><div class="row" id="g-model"></div></div>
       <div class="group"><span class="glabel">Mode</span><div class="row" id="g-mode"></div></div>
       <div class="group"><span class="glabel">Effort</span><div class="row" id="g-effort"></div></div>
+      <div class="group"><span class="glabel">Style</span><div class="row" id="g-style"></div></div>
+      <div class="group"><span class="glabel">Think</span><div class="row" id="g-thinking"></div></div>
     </div>
     <div class="cmd-field">
       <span class="glabel">Command</span>
       <input id="cmd" type="text" placeholder="optional prompt / slash-command to run on launch" />
     </div>
-    <div class="preview"><span class="caret">▸</span><span id="preview"></span></div>
+    <div class="wt-field">
+      <span class="glabel">Worktree</span>
+      <button class="sq wt-toggle" id="wt-toggle" type="button">Off</button>
+      <input id="wt-name" type="text" placeholder="branch / name — blank = auto-named" />
+    </div>
+    <div class="preview"><span class="caret">▸</span><span id="preview"></span><button class="copy" id="copy-preview" type="button" title="Copy command">⧉</button></div>
     <div class="actions">
       <button class="act launch" id="launch">Launch ⏎</button>
       <button class="act save" id="save">★ Save</button>
@@ -48,6 +55,9 @@
       <div class="sfld"><label>Default working directory</label><input id="s-wd" type="text" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" placeholder="/absolute/path — blank = current" /></div>
       <div class="sfld"><label>Claude binary (optional)</label><input id="s-claude" type="text" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" placeholder="claude (auto-detected on PATH)" /></div>
       <div class="sfld"><label>Global hotkey</label><div class="hk-row"><button class="hk-rec" id="hotkey-rec">Alt+W</button><button class="hk-reset" id="hotkey-reset">Reset</button></div></div>
+      <div class="sfld"><label>Fork subagent</label><div class="seg" id="seg-fork"></div></div>
+      <div class="sfld"><label>Auto mode</label><button class="stool" id="critique-automode" type="button">Critique auto-mode rules…</button></div>
+      <div class="sfld"><label>Starter presets</label><button class="stool" id="add-starters" type="button">Add starter presets</button></div>
       <div class="close"><button id="close-settings">Done</button></div>
     </div>
   </div>

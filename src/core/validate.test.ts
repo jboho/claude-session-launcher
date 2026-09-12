@@ -30,6 +30,27 @@ describe("validatePreset", () => {
   test("known dial values pass", () => {
     expect(validatePreset(preset({ name: "x", model: "opus", mode: "auto", effort: "high" })).valid).toBe(true);
   });
+
+  test("dontAsk is now a known mode", () => {
+    expect(validatePreset(preset({ name: "x", mode: "dontAsk" })).valid).toBe(true);
+  });
+
+  test("a branch-like worktree name passes but a leading-dash one is rejected", () => {
+    expect(validatePreset(preset({ name: "x", worktreeName: "feat/foo-bar" })).valid).toBe(true);
+    const r = validatePreset(preset({ name: "x", worktreeName: "-rf" }));
+    expect(r.valid).toBe(false);
+    expect(r.errors.some((e) => e.includes("worktree"))).toBe(true);
+  });
+
+  test("output style must stay within the JSON-safe charset", () => {
+    expect(validatePreset(preset({ name: "x", outputStyle: "My Style-1" })).valid).toBe(true);
+    expect(validatePreset(preset({ name: "x", outputStyle: 'a"}; rm -rf /' })).valid).toBe(false);
+  });
+
+  test("thinking budget must be digits only", () => {
+    expect(validatePreset(preset({ name: "x", thinkingBudget: "0" })).valid).toBe(true);
+    expect(validatePreset(preset({ name: "x", thinkingBudget: "1k" })).valid).toBe(false);
+  });
 });
 
 describe("isValidModelValue", () => {

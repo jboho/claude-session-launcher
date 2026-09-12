@@ -118,6 +118,8 @@ pub fn run() {
             commands::claude_detect,
             commands::terminals_detect,
             commands::ensure_config_dir,
+            commands::add_starter_presets,
+            commands::run_auto_mode_critique,
             set_hotkey,
         ])
         .setup(|app| {

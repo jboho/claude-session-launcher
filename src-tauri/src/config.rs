@@ -103,22 +103,27 @@ pub fn save_presets(presets: &[Preset], file: &Path) -> Result<(), String> {
 /// The presets a fresh install starts with (was `STARTER_PRESETS` in the old TS core, seeded
 /// by the now-removed Electron `seed.ts`). ids are minted here at seed time.
 pub fn starter_presets() -> Vec<Preset> {
-    fn preset(name: &str, model: &str, mode: &str, effort: &str) -> Preset {
+    fn preset(name: &str, model: &str, mode: &str, effort: &str, cmd: &str) -> Preset {
         Preset {
             id: uuid::Uuid::new_v4().to_string(),
             name: name.into(),
             model: model.into(),
             mode: mode.into(),
             effort: effort.into(),
+            cmd: cmd.into(),
             ..Default::default()
         }
     }
     vec![
-        preset("Plan", "opus", "plan", ""),
-        preset("Build", "opus", "acceptEdits", "high"),
-        preset("Autopilot", "opus", "auto", "high"),
-        preset("Quick", "haiku", "", ""),
-        preset("Explore", "sonnet", "plan", ""),
+        preset("Plan", "opus", "plan", "", ""),
+        preset("Build", "opus", "acceptEdits", "high", ""),
+        preset("Autopilot", "opus", "auto", "high", ""),
+        preset("Quick", "haiku", "", "", ""),
+        preset("Explore", "sonnet", "plan", "", ""),
+        // Launch straight into a new-feature skill: /design opens the design canvas,
+        // /code-review now runs in the background at high effort.
+        preset("Design", "opus", "plan", "", "/design"),
+        preset("Review", "sonnet", "auto", "high", "/code-review"),
     ]
 }
 
@@ -190,7 +195,8 @@ mod tests {
         let dir = tempdir();
         let file = dir.join("presets.json");
         let p = Preset { id: "a".into(), name: "Plan".into(), model: "opus".into(),
-                         mode: "plan".into(), effort: String::new(), wd: String::new(), cmd: String::new() };
+                         mode: "plan".into(), effort: String::new(), wd: String::new(),
+                         cmd: String::new(), ..Default::default() };
         save_presets(&[p], &file).unwrap();
         let loaded = load_presets(&file).unwrap();
         assert_eq!(loaded.len(), 1);
@@ -348,8 +354,10 @@ mod tests {
         assert!(!file.exists());
 
         let seeded = load_or_seed_presets(&file).unwrap();
-        assert_eq!(seeded.len(), 5);
+        assert_eq!(seeded.len(), 7);
         assert_eq!(seeded[0].name, "Plan");
+        assert!(seeded.iter().any(|p| p.name == "Design" && p.cmd == "/design"));
+        assert!(seeded.iter().any(|p| p.name == "Review" && p.cmd == "/code-review"));
         assert!(seeded.iter().all(|p| !p.id.is_empty()), "every seeded preset gets an id");
         assert!(file.exists(), "seeding writes the file so it isn't re-seeded next launch");
 
