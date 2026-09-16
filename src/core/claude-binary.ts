@@ -12,8 +12,12 @@ export function resolveClaudeCommandWin(binary: string): string {
   return b ? psQuote(b) : "claude";
 }
 
-/** Login-shell argv that reports the claude path if present — matches the terminal's PATH. */
+/**
+ * Interactive login-shell argv that reports the claude path if present — matches the
+ * terminal's PATH, including `.zshrc`-sourced nvm/mise shims a plain login shell (`-lc`)
+ * would miss.
+ */
 export function buildDetectArgv(shell?: string): string[] {
   const sh = shell?.trim() || "/bin/zsh";
-  return [sh, "-lc", "command -v claude"];
+  return [sh, "-ilc", "command -v claude"];
 }

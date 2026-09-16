@@ -46,11 +46,13 @@ pub fn build_mac_script(launch_string: &str, terminal_app: &str) -> Vec<String> 
     ]
 }
 
-/// Ghostty has no AppleScript surface; it takes the command as CLI args via `open`.
+/// Ghostty has no AppleScript surface; it takes the command as CLI args via `open`. Uses
+/// `-ilc` (interactive+login), not plain `-lc`, so `.zshrc`-sourced nvm/mise shims are on
+/// PATH when `launch_string` runs `claude` — a plain login shell would miss them.
 pub fn build_ghostty_args(launch_string: &str) -> Vec<String> {
     vec![
         "-na".into(), "Ghostty".into(), "--args".into(),
-        "-e".into(), "/bin/zsh".into(), "-lc".into(), launch_string.into(),
+        "-e".into(), "/bin/zsh".into(), "-ilc".into(), launch_string.into(),
     ]
 }
 
@@ -137,10 +139,10 @@ mod tests {
     }
 
     #[test]
-    fn ghostty_runs_through_open_with_a_login_shell() {
+    fn ghostty_runs_through_open_with_an_interactive_login_shell() {
         assert_eq!(
             build_ghostty_args("claude --model opus"),
-            vec!["-na", "Ghostty", "--args", "-e", "/bin/zsh", "-lc", "claude --model opus"]
+            vec!["-na", "Ghostty", "--args", "-e", "/bin/zsh", "-ilc", "claude --model opus"]
         );
     }
 

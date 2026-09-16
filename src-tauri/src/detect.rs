@@ -1,21 +1,22 @@
 //! Port of `src/main/detect.ts` and the detection-argv half of `src/core/claude-binary.ts`
 //! (`buildDetectArgv`).
 //!
-//! Detects the `claude` CLI via a login shell (so the result matches the terminal's PATH,
-//! including nvm/mise shims a non-login shell would miss) and probes for installed terminal
-//! apps via `open -Ra`.
+//! Detects the `claude` CLI via an interactive login shell (`-ilc`, so `.zshrc` is sourced
+//! and the result matches the terminal's PATH, including nvm/mise shims a plain login shell
+//! (`-lc`) would miss) and probes for installed terminal apps via `open -Ra`.
 
 use std::process::Command;
 
 pub const TERMINAL_CANDIDATES: [&str; 3] = ["iTerm", "Terminal", "Ghostty"];
 
-/// Login-shell argv that reports the claude path if present — matches the terminal's PATH.
+/// Interactive login-shell argv that reports the claude path if present — matches the
+/// terminal's PATH, including `.zshrc`-sourced nvm/mise shims.
 pub fn build_detect_argv(shell: Option<&str>) -> Vec<String> {
     let sh = match shell.map(str::trim) {
         Some(s) if !s.is_empty() => s,
         _ => "/bin/zsh",
     };
-    vec![sh.to_string(), "-lc".to_string(), "command -v claude".to_string()]
+    vec![sh.to_string(), "-ilc".to_string(), "command -v claude".to_string()]
 }
 
 /// Take only the first line of shell output as the path; `lines()` already strips both
@@ -65,9 +66,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn detection_uses_a_login_shell_so_it_sees_the_terminals_path() {
-        // A non-login shell misses nvm/mise shims, which is the whole point.
-        assert_eq!(build_detect_argv(Some("/bin/fish")), vec!["/bin/fish", "-lc", "command -v claude"]);
+    fn detection_uses_an_interactive_login_shell_so_it_sees_the_terminals_path() {
+        // A plain login shell (`-lc`) sources `.zprofile`/`.zlogin` but not `.zshrc`, where
+        // nvm/mise typically install their shims — `-ilc` (interactive+login) sources both.
+        assert_eq!(build_detect_argv(Some("/bin/fish")), vec!["/bin/fish", "-ilc", "command -v claude"]);
     }
 
     #[test]

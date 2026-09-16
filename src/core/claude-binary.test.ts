@@ -26,13 +26,13 @@ describe("resolveClaudeCommandWin", () => {
 
 describe("buildDetectArgv", () => {
   test("uses the given login shell", () => {
-    expect(buildDetectArgv("/bin/bash")).toEqual(["/bin/bash", "-lc", "command -v claude"]);
+    expect(buildDetectArgv("/bin/bash")).toEqual(["/bin/bash", "-ilc", "command -v claude"]);
   });
   test("falls back to /bin/zsh when shell is blank/undefined", () => {
-    expect(buildDetectArgv(undefined)).toEqual(["/bin/zsh", "-lc", "command -v claude"]);
-    expect(buildDetectArgv("")).toEqual(["/bin/zsh", "-lc", "command -v claude"]);
+    expect(buildDetectArgv(undefined)).toEqual(["/bin/zsh", "-ilc", "command -v claude"]);
+    expect(buildDetectArgv("")).toEqual(["/bin/zsh", "-ilc", "command -v claude"]);
   });
   test("trims whitespace-padded shell", () => {
-    expect(buildDetectArgv("  /bin/bash  ")).toEqual(["/bin/bash", "-lc", "command -v claude"]);
+    expect(buildDetectArgv("  /bin/bash  ")).toEqual(["/bin/bash", "-ilc", "command -v claude"]);
   });
 });
