@@ -29,7 +29,7 @@ claude-session-launcher/
   .gitignore
   README.md
   scripts/copy-assets.mjs      # copy renderer .html/.css into dist/
-  docs/plans/2026-07-23-claude-session-launcher.md
+  .ai/docs/plans/2026-07-23-claude-session-launcher.md
   mockups/panel.html           # design reference (already exists)
   src/
     core/                      # PURE, no Electron, no Node-in-renderer-facing files

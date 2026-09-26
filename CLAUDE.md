@@ -130,7 +130,7 @@ Signing/notarization/CI env vars are in the deployment note.
 - **Pure-core + thin-wrapper** on both sides (see Architecture) — put logic where it can be unit-tested; keep `std::process::Command` / `TrayIconBuilder` / `osascript` at the Rust edges, and `execFile`-free pure functions in the TS core.
 - **Colocated tests** — TS: `foo.ts` + `foo.test.ts` (Vitest); Rust: `#[cfg(test)] mod tests` in each module (`cargo test`). The renderer (`src/renderer/*`) has no test harness — its logic is pushed into tested `core/` modules; renderer changes are verified by `pnpm build` (tsc) + manual GUI.
 - **Shell safety:** mode/effort go **unquoted** (charset-guarded); the model is quoted only when not bare-safe (allows `[1m]`); wd/cmd are quoted and `--`-separated. Enforced in Rust (`launch.rs`) and mirrored in TS (`core/launch-string.ts`, `core/validate.ts`).
-- **Git:** feature branch → PR → merge; never commit directly to `main`. Conventional-commit-style titles. Built via brainstorm → spec (`docs/specs/`) → write-plan (`docs/plans/`) → run-plan (per-task spec+quality review) → whole-branch review.
+- **Git:** feature branch → PR → merge; never commit directly to `main`. Conventional-commit-style titles. Built via brainstorm → spec + write-plan (`.ai/docs/plans/`) → run-plan (per-task spec+quality review) → whole-branch review.
 - Use `command pnpm` (not bare `pnpm`).
 
 ## Active Development Areas
