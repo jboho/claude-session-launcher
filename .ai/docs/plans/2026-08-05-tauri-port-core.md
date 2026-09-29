@@ -8,7 +8,7 @@
 
 **Tech stack:** Tauri 2.11, Rust 2021, `tauri-plugin-global-shortcut` 2.3, `tauri-plugin-opener` 2, serde/serde_json, existing TypeScript renderer built by `tsc` + `scripts/copy-assets.mjs`.
 
-**Worktree:** `/path/to/worktree`, branch `feat/tauri-port`. All paths below are relative to it.
+**Worktree:** a dedicated worktree on branch `feat/tauri-port`. All paths below are relative to the repo root.
 
 ---
 
@@ -36,7 +36,7 @@ code depends on it.
 
 ## Reference implementation
 
-`/path/to/koll/src-tauri/` is a working Tauri 2 menu-bar app by the same author. Copy its
+A separate working Tauri 2 menu-bar app by the same author serves as the reference. Copy its
 patterns for: `TrayIconBuilder` + `icon_as_template(true)` + click debounce (`lib.rs:831-871`),
 `#[tauri::command]` + serde config structs (`lib.rs:213-230`), and `bundle.macOS.signingIdentity`
 in `tauri.conf.json`. It does **not** solve tray-relative positioning, global shortcuts, dock
