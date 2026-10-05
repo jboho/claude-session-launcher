@@ -185,7 +185,9 @@
     const meta = [p.model||"·", p.mode||"·", p.effort||"·"].join(" · ");
     const go = document.createElement("div");
     go.className = "go";
-    go.innerHTML = `<span class="pname">${p.name}</span><span class="pmeta">${plain?"defaults":meta}</span>`;
+    const pname = document.createElement("span"); pname.className = "pname"; pname.textContent = p.name;
+    const pmeta = document.createElement("span"); pmeta.className = "pmeta"; pmeta.textContent = plain ? "defaults" : meta;
+    go.replaceChildren(pname, pmeta);
     go.onclick = () => launch(p);
     el.appendChild(go);
     if (!plain) {

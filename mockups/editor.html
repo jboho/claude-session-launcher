@@ -207,7 +207,8 @@
     for (const c of combos) {
       const li = document.createElement("li");
       if (c.id === editing.id) li.className = "active";
-      li.innerHTML = `<span class="dot"></span>${c.name || "(unnamed)"}`;
+      const dot = document.createElement("span"); dot.className = "dot";
+      li.append(dot, c.name || "(unnamed)");
       li.onclick = () => { editing = { ...c }; renderForm(); renderList(); };
       ul.appendChild(li);
     }
