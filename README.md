@@ -4,6 +4,11 @@ A menu-bar/tray widget that launches a `claude` CLI session in your terminal wit
 model / permission-mode / effort (plus working directory and an initial command)
 preselected — and lets you save named presets for one-click launch.
 
+<p align="center">
+  <img src="docs/images/panel.png" alt="Claude Launcher panel: model, mode, effort, style, command, worktree, presets" width="360">
+  <img src="docs/images/settings.png" alt="Claude Launcher settings: terminal, models, working directory, hotkey" width="360">
+</p>
+
 ## Install (macOS)
 
 Download the latest **`Claude-Launcher-<version>-<arch>.dmg`** from the
