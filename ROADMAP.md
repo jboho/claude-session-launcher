@@ -11,7 +11,7 @@ first, then Windows) that anyone on the team can install and use.
 
 - Button-panel UI: Model / Mode / Effort dials, live launch-string preview, presets lane, Settings overlay
 - Claude branding: orange accent, sunburst mark, serif title
-- Three ways to summon: **⌥W** global hotkey · menu-bar icon · Dock icon (+ tray click)
+- Two ways to summon: **⌥W** global hotkey · menu-bar icon (+ tray click); no Dock icon (Accessory activation policy)
 - Model-aware dials: Haiku greys out Effort + Auto
 - Modes: Plan · Auto · Accept (Manual = default when none selected); Bypass removed (org-locked)
 - Presets: save, delete, ✎ load-into-composer; **starter presets** seeded on first run
@@ -29,9 +29,17 @@ first, then Windows) that anyone on the team can install and use.
   - *Deferred:* no dedicated model-version-picker UI — the model list still takes free-text aliases/full dated ids, not a curated version selector.
 - **#4 — Distribution (internal):**
   - Real app icon (bolt → `.icns`) and a menu-bar bolt template PNG, embedded in the Rust binary (`src-tauri/icons/`, via `include_bytes!`).
-  - The **Tauri bundler** builds the macOS `.app` + `.dmg`. Local builds are **signed with a Developer ID and notarized + stapled** via `scripts/build-signed.sh` (`pnpm tauri:build:signed`, credentials in a gitignored `.env.signing`). GitHub Actions run build+test on every PR (`ci.yml`) and publish an **unsigned** Tauri DMG to a GitHub Release on a `v*` tag (`release.yml`).
+  - The **Tauri bundler** builds the macOS `.app` + `.dmg`. Local builds are **signed with a Developer ID and notarized + stapled** via `scripts/build-signed.sh` (`pnpm tauri:build:signed`, credentials in a gitignored `.env.signing`). GitHub Actions run build+test on every PR (`ci.yml`) and, on a `v*` tag, build a **signed + notarized** Tauri DMG and attach it to a GitHub Release (`release.yml`; falls back to unsigned if the signing secrets are empty, so spctl-check every release).
   - `docs/INSTALL.md` covers download, the Gatekeeper story (notarized opens cleanly; unsigned needs the quarantine bypass), and local/CI release.
-  - *Deferred:* CI signing + notarization (import the Developer ID cert from Actions secrets so the released DMG opens cleanly); auto-update; Windows CI artifacts (need a Tauri Windows backend — see below).
+  - *Deferred:* auto-update; Windows CI artifacts (need a Tauri Windows backend — see below).
+
+- **#5 — Public release (v1.0.0, 2026-10-05):** repo scrubbed and recreated (old history kept in a private archive), v1.0.0 signed + notarized in CI, repo public with secret scanning, push protection, CodeQL, Dependabot and a squash-only ruleset. README restructured (#9); CodeQL alert fixed (#8).
+
+---
+
+## Follow-ups
+
+- [ ] Close Dependabot alert #5 (`qs`) with a pnpm `overrides: qs: ^6.16.0` entry in `pnpm-workspace.yaml`; blocked by the safe-pnpm age gate until after 2026-10-06 09:45 UTC
 
 ---
 

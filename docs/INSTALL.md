@@ -80,9 +80,9 @@ Releases are built by GitHub Actions (`.github/workflows/release.yml`) on a vers
 
 ```bash
 # bump the version in package.json AND src-tauri/tauri.conf.json first
-# (e.g. 0.1.0 -> 0.2.0), commit it, then:
-git tag v0.2.0
-git push origin v0.2.0
+# (e.g. 1.0.0 -> 1.0.1), commit it, then:
+git tag vX.Y.Z
+git push origin vX.Y.Z
 ```
 
 `release.yml` runs on a macOS runner and attaches the resulting DMG to the GitHub Release for
