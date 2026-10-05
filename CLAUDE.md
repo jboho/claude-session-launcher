@@ -45,7 +45,7 @@ checkout/worktree (else it fails with "frontendDist … doesn't exist", not a te
 |----------|-----------|---------|-------|
 | Backend | Rust + Tauri | Tauri 2.11 | `src-tauri/` — owns everything touching the shell/filesystem; renders in the OS WebView (WKWebView on macOS), no bundled Chromium/Node |
 | Frontend | TypeScript | ^5.6 | `NodeNext` ESM, `"type":"module"` — relative imports use `.js` extensions; framework-free DOM, no bundler |
-| Test runners | Vitest + `cargo test` | Vitest ^2.1 | colocated `*.test.ts` (`pnpm test`) for TS core/renderer; `cargo test` for the Rust backend |
+| Test runners | Vitest + `cargo test` | Vitest ^4.1 | colocated `*.test.ts` (`pnpm test`) for TS core/renderer; `cargo test` for the Rust backend |
 | Mutation testing | Stryker + cargo-mutants | Stryker ^9.6 | `@stryker-mutator/*` for the TS core; cargo-mutants for Rust |
 | Frontend build | `tsc` + `scripts/copy-assets.mjs` | — | tsc → `dist/{core,renderer}`; copy-assets copies the renderer `index.html` + `panel.css` (the tray icon is embedded in the Rust binary, not copied) |
 | Packaging | Tauri bundler | — | macOS `.app` + `.dmg`; local builds signed with Developer ID (Team `72FBK9YTA3`) + notarized via `scripts/build-signed.sh` |
@@ -142,7 +142,7 @@ Roadmap in `ROADMAP.md`.
   groundwork was retired. A Windows port means a Rust Windows launch backend (the PowerShell
   launch-string builder still lives, unused, in `src/core/`).
 
-Contributors: Jonathan Boho (sole author). Release cadence: none yet (no tags; `0.1.0` unreleased).
+Contributors: Jonathan Boho (sole author). Releases: tagged `v*` builds a signed + notarized DMG via `release.yml`; v1.0.0 is the first public release.
 
 Runtime/build gotchas (tray, panel sizing, renderer module graph, IPC bridge, iTerm AppleScript, the Claude Code launch-flag surface that drives the dials) are in the operational-knowledge note.
 
