@@ -1,6 +1,6 @@
 # Installing Claude Launcher (macOS)
 
-Internal builds, macOS only for now. Builds are **code-signed** with a Developer ID
+macOS only for now. Releases are **code-signed** with a Developer ID
 certificate (Team `72FBK9YTA3`) and run under the hardened runtime.
 
 ## Install
