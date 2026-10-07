@@ -61,8 +61,8 @@ echo "==> building…"
 command pnpm tauri:build
 
 # --- locate artifacts ------------------------------------------------------
-APP="$(/usr/bin/find src-tauri/target/release/bundle/macos -maxdepth 1 -name '*.app' | head -n1)"
-DMG="$(/usr/bin/find src-tauri/target/release/bundle/dmg -maxdepth 1 -name '*.dmg' | head -n1)"
+APP="$(/usr/bin/find "${CARGO_TARGET_DIR:-$HOME/.cache/cargo-target}"/release/bundle/macos -maxdepth 1 -name '*.app' | head -n1)"
+DMG="$(/usr/bin/find "${CARGO_TARGET_DIR:-$HOME/.cache/cargo-target}"/release/bundle/dmg -maxdepth 1 -name '*.dmg' | head -n1)"
 if [[ -z "$APP" ]]; then echo "error: no .app produced" >&2; exit 1; fi
 
 # --- notarize the DMG container --------------------------------------------

@@ -37,7 +37,7 @@ why they re-prompted on every install.
 ## Building locally
 
 The app is built with **Tauri** (Rust core + WKWebView). Both bundle targets — the
-`.app` and a `.dmg` — land under `src-tauri/target/release/bundle/`.
+`.app` and a `.dmg` — land under `~/.cache/cargo-target/release/bundle/`.
 
 ```bash
 command pnpm install
@@ -52,7 +52,7 @@ certificate from the keychain — nothing personal is committed to the repo — 
 the result. To verify by hand:
 
 ```bash
-APP="src-tauri/target/release/bundle/macos/Claude Launcher.app"
+APP="$HOME/.cache/cargo-target/release/bundle/macos/Claude Launcher.app"
 codesign -dvvv "$APP"                    # expect flags=0x10000(runtime), Authority=Developer ID Application
 codesign --verify --deep --strict "$APP"
 spctl -a -vvv -t exec "$APP"             # 'accepted' once notarized; 'rejected/Unnotarized' before
@@ -106,4 +106,4 @@ repo secrets.
 
 Without those secrets, cut a **signed + notarized** artifact locally instead:
 `pnpm tauri:build:signed` (with `.env.signing` populated), then upload the DMG from
-`src-tauri/target/release/bundle/dmg/` to the release by hand.
+`~/.cache/cargo-target/release/bundle/dmg/` to the release by hand.
