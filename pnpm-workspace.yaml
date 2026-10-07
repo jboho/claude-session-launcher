@@ -2,3 +2,6 @@
 # nothing else needs one.
 allowBuilds:
   esbuild: true
+
+overrides:
+  qs: ^6.16.0
