@@ -6,7 +6,7 @@ Cold reference — read when building for release, signing, notarizing, or cutti
 
 - **`ci.yml`** — on PRs + pushes to `main`: macOS runner (required — the Rust core uses macOS-only tray/window APIs and won't compile on Linux), pnpm 10.33 / Node 20 + Rust toolchain, `pnpm install --frozen-lockfile` → `pnpm build` → `pnpm test` → `cargo test --manifest-path src-tauri/Cargo.toml`. The merge gate, covering both the TS core and the Rust backend that owns launch-argument safety.
 - **`release.yml`** — on a `v*` git tag: macOS runner → Rust toolchain → **signed + notarized** via `scripts/build-signed.sh` when the repo's signing secrets are set (imports the Developer ID cert into a throwaway keychain + decodes the App Store Connect API key; exact secret names in `docs/INSTALL.md` "Releasing (maintainers)"), else falls back to an unsigned `pnpm tauri:build`. DMG attached to the GitHub Release (`softprops/action-gh-release`, `contents: write`).
-- **Local signed build:** `pnpm tauri:build:signed` (`scripts/build-signed.sh`) — signs with the Developer ID auto-discovered from the keychain and, if `.env.signing` holds notary credentials, notarizes + staples both the `.app` and the `.dmg`, then verifies. Artifacts under `src-tauri/target/release/bundle/{macos,dmg}/`.
+- **Local signed build:** `pnpm tauri:build:signed` (`scripts/build-signed.sh`) — signs with the Developer ID auto-discovered from the keychain and, if `.env.signing` holds notary credentials, notarizes + staples both the `.app` and the `.dmg`, then verifies. Artifacts under `~/.cache/cargo-target/release/bundle/{macos,dmg}/`.
 
 ## Release flow
 
