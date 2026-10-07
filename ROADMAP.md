@@ -39,7 +39,7 @@ first, then Windows) that anyone on the team can install and use.
 
 ## Follow-ups
 
-- [ ] Close Dependabot alert #5 (`qs`) with a pnpm `overrides: qs: ^6.16.0` entry in `pnpm-workspace.yaml`; blocked by the safe-pnpm age gate until after 2026-10-06 09:45 UTC
+- [x] Close Dependabot alert #5 (`qs`) with a pnpm `overrides: qs: ^6.16.0` entry in `pnpm-workspace.yaml`; blocked by the safe-pnpm age gate until after 2026-10-06 09:45 UTC
 
 ---
 
