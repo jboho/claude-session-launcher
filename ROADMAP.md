@@ -33,13 +33,7 @@ first, then Windows) that anyone on the team can install and use.
   - `docs/INSTALL.md` covers download, the Gatekeeper story (notarized opens cleanly; unsigned needs the quarantine bypass), and local/CI release.
   - *Deferred:* auto-update; Windows CI artifacts (need a Tauri Windows backend — see below).
 
-- **#5 — Public release (v1.0.0, 2026-10-05):** repo scrubbed and recreated (old history kept in a private archive), v1.0.0 signed + notarized in CI, repo public with secret scanning, push protection, CodeQL, Dependabot and a squash-only ruleset. README restructured (#9); CodeQL alert fixed (#8).
-
----
-
-## Follow-ups
-
-- [x] Close Dependabot alert #5 (`qs`) with a pnpm `overrides: qs: ^6.16.0` entry in `pnpm-workspace.yaml`; blocked by the safe-pnpm age gate until after 2026-10-06 09:45 UTC
+- **#5 — Public release (v1.0.0, 2026-10-05):** repo scrubbed and recreated (old history kept in a private archive), v1.0.0 signed + notarized in CI, repo public with secret scanning, push protection, CodeQL, Dependabot and a squash-only ruleset. README restructured (#9); CodeQL alert fixed (#8); Dependabot alert #5 (`qs`) closed with a pnpm override (#12).
 
 ---
 
