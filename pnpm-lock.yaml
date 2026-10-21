@@ -6,6 +6,7 @@ settings:
 
 overrides:
   qs: ^6.16.0
+  vite: ^8.3.3
 
 importers:
 
@@ -20,7 +21,7 @@ importers:
         version: 9.6.1(@types/node@20.19.43)
       '@stryker-mutator/vitest-runner':
         specifier: ^9.6.1
-        version: 9.6.1(@stryker-mutator/core@9.6.1(@types/node@20.19.43))(vitest@4.1.11(@types/node@20.19.43)(vite@8.3.2(@types/node@20.19.43)))
+        version: 9.6.1(@stryker-mutator/core@9.6.1(@types/node@20.19.43))(vitest@4.1.11(@types/node@20.19.43)(vite@8.3.4(@types/node@20.19.43)))
       '@tauri-apps/cli':
         specifier: ^2.11.4
         version: 2.11.4
@@ -32,7 +33,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.1.11
-        version: 4.1.11(@types/node@20.19.43)(vite@8.3.2(@types/node@20.19.43))
+        version: 4.1.11(@types/node@20.19.43)(vite@8.3.4(@types/node@20.19.43))
 
 packages:
 
@@ -572,7 +573,7 @@ packages:
     resolution: {integrity: sha512-2XJVD55d1o5AZous5CCGKS74g/riOj9odEt2bQpCVZeblHyHdnMeFl4jl0XjU21stf4mbjUkew2eXQZt65g5CQ==}
     peerDependencies:
       msw: ^2.4.9
-      vite: ^6.0.0 || ^7.0.0 || ^8.0.0
+      vite: ^8.3.3
     peerDependenciesMeta:
       msw:
         optional: true
@@ -1137,8 +1138,8 @@ packages:
     peerDependencies:
       browserslist: '>= 4.21.0'
 
-  vite@8.3.2:
-    resolution: {integrity: sha512-SQr1x6W5vVSbROg7vsyXIaxK9b0G7zsT68acdWWRmnBUsgDieLCRG+Rep9WdZgcposvv/GSnr4GUUBqB3vXq6w==}
+  vite@8.3.4:
+    resolution: {integrity: sha512-IftLE8phJhdNRIGNEV4JCCvfNScoZQVfcXaN8TQropWGJtOHcu+iAB9pHcuGvmEb/kddw0LBe/jS8ztdC6xdiQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
     peerDependencies:
@@ -1196,7 +1197,7 @@ packages:
       '@vitest/ui': 4.1.11
       happy-dom: '*'
       jsdom: '*'
-      vite: ^6.0.0 || ^7.0.0 || ^8.0.0
+      vite: ^8.3.3
     peerDependenciesMeta:
       '@edge-runtime/vm':
         optional: true
@@ -1713,14 +1714,14 @@ snapshots:
 
   '@stryker-mutator/util@9.6.1': {}
 
-  '@stryker-mutator/vitest-runner@9.6.1(@stryker-mutator/core@9.6.1(@types/node@20.19.43))(vitest@4.1.11(@types/node@20.19.43)(vite@8.3.2(@types/node@20.19.43)))':
+  '@stryker-mutator/vitest-runner@9.6.1(@stryker-mutator/core@9.6.1(@types/node@20.19.43))(vitest@4.1.11(@types/node@20.19.43)(vite@8.3.4(@types/node@20.19.43)))':
     dependencies:
       '@stryker-mutator/api': 9.6.1
       '@stryker-mutator/core': 9.6.1(@types/node@20.19.43)
       '@stryker-mutator/util': 9.6.1
       semver: 7.8.5
       tslib: 2.8.1
-      vitest: 4.1.11(@types/node@20.19.43)(vite@8.3.2(@types/node@20.19.43))
+      vitest: 4.1.11(@types/node@20.19.43)(vite@8.3.4(@types/node@20.19.43))
 
   '@tauri-apps/api@2.11.1': {}
 
@@ -1793,13 +1794,13 @@ snapshots:
       chai: 6.3.0
       tinyrainbow: 3.2.0
 
-  '@vitest/mocker@4.1.11(vite@8.3.2(@types/node@20.19.43))':
+  '@vitest/mocker@4.1.11(vite@8.3.4(@types/node@20.19.43))':
     dependencies:
       '@vitest/spy': 4.1.11
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 8.3.2(@types/node@20.19.43)
+      vite: 8.3.4(@types/node@20.19.43)
 
   '@vitest/pretty-format@4.1.11':
     dependencies:
@@ -2275,7 +2276,7 @@ snapshots:
       escalade: 3.2.0
       picocolors: 1.1.1
 
-  vite@8.3.2(@types/node@20.19.43):
+  vite@8.3.4(@types/node@20.19.43):
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.7
@@ -2286,10 +2287,10 @@ snapshots:
       '@types/node': 20.19.43
       fsevents: 2.3.3
 
-  vitest@4.1.11(@types/node@20.19.43)(vite@8.3.2(@types/node@20.19.43)):
+  vitest@4.1.11(@types/node@20.19.43)(vite@8.3.4(@types/node@20.19.43)):
     dependencies:
       '@vitest/expect': 4.1.11
-      '@vitest/mocker': 4.1.11(vite@8.3.2(@types/node@20.19.43))
+      '@vitest/mocker': 4.1.11(vite@8.3.4(@types/node@20.19.43))
       '@vitest/pretty-format': 4.1.11
       '@vitest/runner': 4.1.11
       '@vitest/snapshot': 4.1.11
@@ -2306,7 +2307,7 @@ snapshots:
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
       tinyrainbow: 3.2.0
-      vite: 8.3.2(@types/node@20.19.43)
+      vite: 8.3.4(@types/node@20.19.43)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 20.19.43
