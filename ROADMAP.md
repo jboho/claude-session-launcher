@@ -33,7 +33,7 @@ first, then Windows) that anyone on the team can install and use.
   - `docs/INSTALL.md` covers download, the Gatekeeper story (notarized opens cleanly; unsigned needs the quarantine bypass), and local/CI release.
   - *Deferred:* auto-update; Windows CI artifacts (need a Tauri Windows backend — see below).
 
-- **#5 — Public release (v1.0.0, 2026-10-05):** repo scrubbed and recreated (old history kept in a private archive), v1.0.0 signed + notarized in CI, repo public with secret scanning, push protection, CodeQL, Dependabot and a squash-only ruleset. README restructured (#9); CodeQL alert fixed (#8); Dependabot alert #5 (`qs`) closed with a pnpm override (#12); alerts #27–29 (`vite` / `launch-editor`) fixed by a `vite: ^8.3.3` override (#16).
+- **#5 — Public release (v1.0.0, 2026-10-05):** repo scrubbed and recreated (old history kept in a private archive), v1.0.0 signed + notarized in CI, repo public with secret scanning, push protection, CodeQL, Dependabot and a squash-only ruleset. README restructured (#9); CodeQL alert fixed (#8); Dependabot alert #5 (`qs`) closed with a pnpm override (#12); alerts #27–29 (`vite` / `launch-editor`) fixed by a `vite: ^8.3.3` override (#16); alert #33 (`@vitest/mocker`) fixed by bumping vitest to 4.1.12 (#18).
 
 ---
 
