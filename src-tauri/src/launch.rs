@@ -67,18 +67,6 @@ fn assert_safe_model(value: &str) -> Result<(), String> {
     }
 }
 
-/// A worktree name reaches `--worktree <name>`. Branch-like names add `/` to the dial
-/// charset, but a leading `-` is still forbidden so the value can never be read as a flag;
-/// the builder quotes it via `shell_quote_if_needed`. Empty is allowed — a bare `--worktree`
-/// lets the CLI auto-generate the name.
-pub fn is_safe_worktree_name(value: &str) -> bool {
-    value.is_empty()
-        || (!value.starts_with('-')
-            && value
-                .chars()
-                .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_' | '/')))
-}
-
 /// An output-style name is embedded as a JSON string value in `--settings`; restrict it to a
 /// plain charset (letters, digits, space, `-`, `_`) so it can neither break the JSON nor the
 /// shell. Empty = no `--settings` emitted.
@@ -92,16 +80,6 @@ pub fn is_safe_output_style(value: &str) -> bool {
 /// empty to omit). "0" turns thinking off.
 pub fn is_safe_thinking_budget(value: &str) -> bool {
     value.is_empty() || value.chars().all(|c| c.is_ascii_digit())
-}
-
-fn assert_safe_worktree_name(value: &str) -> Result<(), String> {
-    if is_safe_worktree_name(value) {
-        Ok(())
-    } else {
-        Err(format!(
-            "Unsafe worktree name: {value:?} — only letters, digits, '.', '-', '_', '/' are allowed, and it may not start with '-'."
-        ))
-    }
 }
 
 fn assert_safe_output_style(value: &str) -> Result<(), String> {
@@ -171,7 +149,6 @@ pub fn build_launch_string_with_env(
     assert_safe_model(spec.model.trim())?;
     assert_safe_dial("mode", spec.mode.trim())?;
     assert_safe_dial("effort", spec.effort.trim())?;
-    assert_safe_worktree_name(spec.worktree_name.trim())?;
     assert_safe_output_style(spec.output_style.trim())?;
     assert_safe_thinking_budget(spec.thinking_budget.trim())?;
 
@@ -186,14 +163,6 @@ pub fn build_launch_string_with_env(
     let mut parts = vec![claude_cmd.to_string()];
     if !spec.model.trim().is_empty() {
         parts.push(format!("--model {}", shell_quote_if_needed(spec.model.trim())));
-    }
-    if spec.worktree {
-        let name = spec.worktree_name.trim();
-        if name.is_empty() {
-            parts.push("--worktree".to_string());
-        } else {
-            parts.push(format!("--worktree {}", shell_quote_if_needed(name)));
-        }
     }
     if !spec.mode.trim().is_empty() {
         parts.push(format!("--permission-mode {}", spec.mode.trim()));
@@ -543,54 +512,6 @@ mod tests {
         assert_eq!(build_launch_string(&s, "claude").unwrap(), "cd -- '-' && claude");
     }
 
-    // --- Worktree (`--worktree [name]`) ---
-
-    #[test]
-    fn a_bare_worktree_flag_is_emitted_after_the_model() {
-        let s = LaunchSpec { worktree: true, ..spec("opus", "auto", "high", "", "") };
-        assert_eq!(
-            build_launch_string(&s, "claude").unwrap(),
-            "claude --model opus --worktree --permission-mode auto --effort high"
-        );
-    }
-
-    #[test]
-    fn a_named_worktree_passes_the_name_quoted_only_when_not_bare_safe() {
-        let bare = LaunchSpec { worktree: true, worktree_name: "wip".into(), ..spec("opus", "", "", "", "") };
-        assert_eq!(
-            build_launch_string(&bare, "claude").unwrap(),
-            "claude --model opus --worktree wip"
-        );
-        // A branch-style name has a '/', which isn't a bare token, so it is single-quoted.
-        let slashed = LaunchSpec { worktree: true, worktree_name: "feat/foo".into(), ..spec("opus", "", "", "", "") };
-        assert_eq!(
-            build_launch_string(&slashed, "claude").unwrap(),
-            "claude --model opus --worktree 'feat/foo'"
-        );
-    }
-
-    #[test]
-    fn worktree_false_never_emits_the_flag_even_with_a_name_set() {
-        let s = LaunchSpec { worktree: false, worktree_name: "x".into(), ..spec("opus", "", "", "", "") };
-        assert_eq!(build_launch_string(&s, "claude").unwrap(), "claude --model opus");
-    }
-
-    #[test]
-    fn worktree_name_charset_allows_branch_slashes_but_rejects_a_leading_hyphen() {
-        assert!(is_safe_worktree_name(""));
-        assert!(is_safe_worktree_name("feat/foo-bar_1.2"));
-        assert!(!is_safe_worktree_name("-rf"));
-        assert!(!is_safe_worktree_name("a b"));
-        assert!(!is_safe_worktree_name("a;id"));
-    }
-
-    #[test]
-    fn a_hostile_worktree_name_is_refused() {
-        let s = LaunchSpec { worktree: true, worktree_name: "-rf".into(), ..spec("opus", "", "", "", "") };
-        let err = build_launch_string(&s, "claude").unwrap_err();
-        assert!(err.contains("worktree"), "error should name the offending field: {err}");
-    }
-
     // --- Output style (`--settings '{"outputStyle":"…"}'`) ---
 
     #[test]
@@ -687,20 +608,18 @@ mod tests {
         );
     }
 
-    // --- Everything at once: env prefix, cd, model, worktree, mode, effort, settings, cmd ---
+    // --- Everything at once: env prefix, cd, model, mode, effort, settings, cmd ---
 
     #[test]
     fn the_full_combined_invocation_orders_every_piece_deterministically() {
         let s = LaunchSpec {
-            worktree: true,
-            worktree_name: "feat/x".into(),
             output_style: "Concise".into(),
             thinking_budget: "0".into(),
             ..spec("opus", "auto", "high", "~/Code", "/wrap")
         };
         assert_eq!(
             build_launch_string(&s, "claude").unwrap(),
-            "cd -- '~/Code' && MAX_THINKING_TOKENS=0 claude --model opus --worktree 'feat/x' \
+            "cd -- '~/Code' && MAX_THINKING_TOKENS=0 claude --model opus \
              --permission-mode auto --effort high --settings '{\"outputStyle\":\"Concise\"}' -- '/wrap'"
         );
     }

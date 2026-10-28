@@ -15,12 +15,10 @@ const values = (options: { value: string }[]): string[] => options.map((o) => o.
  * (those are normalizePreset coercion + assertSafeDial in the launch dispatcher).
  */
 /**
- * Charset guards mirroring the Rust launch builder (is_safe_worktree_name / is_safe_output_style
- * / is_safe_thinking_budget): a branch-like worktree name with no leading `-`; an output-style
- * name safe inside the `--settings` JSON; a decimal-only thinking budget. Each allows empty
+ * Charset guards mirroring the Rust launch builder (is_safe_output_style / is_safe_thinking_budget):
+ * an output-style name safe inside the `--settings` JSON; a decimal-only thinking budget. Each allows empty
  * (the field is optional), so callers guard with `if (value && !RE.test(value))`.
  */
-export const WORKTREE_NAME_RE = /^(?!-)[A-Za-z0-9._/-]*$/;
 export const OUTPUT_STYLE_RE = /^[A-Za-z0-9 _-]*$/;
 export const THINKING_BUDGET_RE = /^[0-9]*$/;
 
@@ -29,8 +27,6 @@ export function validatePreset(preset: Preset): ValidationResult {
   if (!preset.name.trim()) errors.push("Name is required.");
   if (preset.mode && !values(MODES).includes(preset.mode)) errors.push(`Unknown mode: ${preset.mode}`);
   if (preset.effort && !values(EFFORTS).includes(preset.effort)) errors.push(`Unknown effort: ${preset.effort}`);
-  if (preset.worktreeName && !WORKTREE_NAME_RE.test(preset.worktreeName))
-    errors.push(`Invalid worktree name: ${preset.worktreeName}`);
   if (preset.outputStyle && !OUTPUT_STYLE_RE.test(preset.outputStyle))
     errors.push(`Invalid output style: ${preset.outputStyle}`);
   if (preset.thinkingBudget && !THINKING_BUDGET_RE.test(preset.thinkingBudget))

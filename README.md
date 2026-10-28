@@ -22,7 +22,7 @@
 
 ## Overview
 
-**Claude Session Launcher** is a small [Tauri](https://tauri.app/) menu-bar widget that opens a `claude` CLI session in your terminal with **model**, **permission mode** and **effort** already chosen (plus output style, thinking, working directory, worktree and an initial command). Save the combinations you use as named presets and launch them in one click or one hotkey.
+**Claude Session Launcher** is a small [Tauri](https://tauri.app/) menu-bar widget that opens a `claude` CLI session in your terminal with **model**, **permission mode** and **effort** already chosen (plus output style, thinking, working directory and an initial command). Save the combinations you use as named presets and launch them in one click or one hotkey.
 
 It writes a shell command into your terminal. It does not embed or wrap the CLI, so every session is a normal `claude` session.
 
@@ -38,7 +38,7 @@ It writes a shell command into your terminal. It does not embed or wrap the CLI,
 
 | Launcher                                                                                                         | Settings                                                                                       |
 | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| ![Launcher panel with model, mode, effort, style and think dials, command field, worktree toggle and presets](docs/images/panel.png) | ![Settings screen with terminal choice, model list, working directory, Claude binary and global hotkey](docs/images/settings.png) |
+| ![Launcher panel with model, mode, effort, style and think dials, command field and presets](docs/images/panel.png) | ![Settings screen with terminal choice, model list, working directory, Claude binary and global hotkey](docs/images/settings.png) |
 
 The **launcher** shows the dials, a live preview of the exact command it will run (with a copy button), and your presets underneath. Click a preset to launch it immediately, or use the pencil to load it back into the dials.
 
@@ -50,7 +50,6 @@ The **settings** screen picks your terminal, edits the model list, and sets a de
 - **Live command preview** — The exact `claude ...` command is shown before you launch it and can be copied. The preview comes from the same Rust code that runs the launch, so it can't drift from what actually runs.
 - **Presets** — Save, edit and delete named combinations, including their working directory and command. Starter presets are seeded on first run.
 - **Inline command** — Optionally pass a prompt or slash command to run as soon as the session starts.
-- **Worktree launch** — Start the session in a new git worktree, named or auto-named.
 - **Two ways to summon** — Global hotkey (default **Option+W**, configurable) or the menu-bar icon. The app has no Dock icon.
 - **Terminals** — iTerm, Apple Terminal and Ghostty. Only terminals installed on your machine are offered.
 - **Custom models** — Edit the model list in Settings; any model id is accepted, including `[1m]` context variants such as `claude-opus-4-8[1m]`.

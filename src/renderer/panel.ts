@@ -45,7 +45,7 @@ let settings: Settings = { terminal: "iTerm", wd: "", cmd: "", claudeBinary: "",
 const sel = { model: "opus", mode: "auto", effort: "high", outputStyle: "", thinkingBudget: "" };
 // Transient composer state (per-launch). wd seeds from the settings default; cmd
 // is entered inline before each launch (not persisted).
-const composer = { wd: "", cmd: "", worktree: false, worktreeName: "" };
+const composer = { wd: "", cmd: "" };
 
 const $ = (id: string): HTMLElement => document.getElementById(id)!;
 // No mode selected => manual (ask for everything).
@@ -57,8 +57,6 @@ const composed = (): LaunchSpec => ({
   thinkingBudget: sel.thinkingBudget,
   wd: composer.wd,
   cmd: composer.cmd,
-  worktree: composer.worktree,
-  worktreeName: composer.worktreeName,
 });
 
 /** The launchable LaunchSpec view of a saved preset (drops its id/name). */
@@ -70,8 +68,6 @@ const launchSpecOf = (p: Preset): LaunchSpec => ({
   thinkingBudget: p.thinkingBudget,
   wd: p.wd,
   cmd: p.cmd,
-  worktree: p.worktree,
-  worktreeName: p.worktreeName,
 });
 
 /** Turn off the webview's text assistance for technical inputs (ids, paths, commands). */
@@ -130,16 +126,6 @@ function renderDials(): void {
   }
 }
 
-/** Reflect the transient worktree toggle + name into the composer row. */
-function renderWorktree(): void {
-  const toggle = $("wt-toggle") as HTMLButtonElement;
-  toggle.classList.toggle("on", composer.worktree);
-  toggle.textContent = composer.worktree ? "On" : "Off";
-  const name = $("wt-name") as HTMLInputElement;
-  name.disabled = !composer.worktree;
-  name.value = composer.worktreeName;
-}
-
 // Guards against a slow/out-of-order previewLaunchString response clobbering a newer one.
 let previewToken = 0;
 function renderPreview(): void {
@@ -163,7 +149,6 @@ function presetEl(p: Preset, plain: boolean): HTMLElement {
   const el = document.createElement("div");
   el.className = "preset" + (plain ? " plain" : "");
   const extras = [
-    p.worktree ? "wt" : "",
     p.outputStyle ? p.outputStyle.toLowerCase() : "",
     p.thinkingBudget === "0" ? "think:off" : "",
   ].filter(Boolean);
@@ -188,10 +173,7 @@ function presetEl(p: Preset, plain: boolean): HTMLElement {
       sel.thinkingBudget = p.thinkingBudget;
       composer.wd = p.wd;
       composer.cmd = p.cmd;
-      composer.worktree = p.worktree;
-      composer.worktreeName = p.worktreeName;
       ($("cmd") as HTMLInputElement).value = p.cmd;
-      renderWorktree();
       renderDials();
       renderPreview();
       toast(`Loaded ${p.name}`);
@@ -428,7 +410,6 @@ async function confirmSave(): Promise<void> {
   const preset: Preset = {
     ...emptyPreset(), name, ...sel,
     wd: composer.wd, cmd: composer.cmd,
-    worktree: composer.worktree, worktreeName: composer.worktreeName,
   };
   const result = validatePreset(preset);
   if (!result.valid) {
@@ -477,16 +458,6 @@ async function init(): Promise<void> {
   };
   ($("cmd") as HTMLInputElement).oninput = () => {
     composer.cmd = ($("cmd") as HTMLInputElement).value;
-    renderPreview();
-  };
-  disableTextAssist($("wt-name") as HTMLInputElement); // branch names are technical tokens
-  $("wt-toggle").onclick = () => {
-    composer.worktree = !composer.worktree;
-    renderWorktree();
-    renderPreview();
-  };
-  ($("wt-name") as HTMLInputElement).oninput = () => {
-    composer.worktreeName = ($("wt-name") as HTMLInputElement).value;
     renderPreview();
   };
   $("copy-preview").onclick = async () => {
@@ -541,7 +512,6 @@ async function init(): Promise<void> {
   };
 
   renderDials();
-  renderWorktree();
   renderPreview();
   renderPresets();
   renderTerminalSeg();

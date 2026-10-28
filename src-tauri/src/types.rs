@@ -14,17 +14,6 @@ where
     })
 }
 
-/// Deserialize a bool, coercing any non-boolean JSON (including the JSON literal `false`,
-/// null, strings, numbers) to `false`. Only an explicit `true` enables the flag — matching
-/// lenient_string's "one bad field must not take the whole file down" contract.
-fn lenient_bool<'de, D>(deserializer: D) -> Result<bool, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let value = serde_json::Value::deserialize(deserializer)?;
-    Ok(matches!(value, serde_json::Value::Bool(true)))
-}
-
 fn default_terminal() -> String {
     "iTerm".to_string()
 }
@@ -137,10 +126,6 @@ pub struct Preset {
     pub wd: String,
     #[serde(default, deserialize_with = "lenient_string")]
     pub cmd: String,
-    #[serde(default, deserialize_with = "lenient_bool")]
-    pub worktree: bool,
-    #[serde(default, deserialize_with = "lenient_string")]
-    pub worktree_name: String,
     #[serde(default, deserialize_with = "lenient_string")]
     pub output_style: String,
     #[serde(default, deserialize_with = "lenient_string")]
@@ -160,12 +145,6 @@ pub struct LaunchSpec {
     pub wd: String,
     #[serde(default, deserialize_with = "lenient_string")]
     pub cmd: String,
-    /// Run the session in a fresh git worktree (`--worktree`). `worktree_name` optionally
-    /// names it; blank = let the CLI auto-generate a name.
-    #[serde(default, deserialize_with = "lenient_bool")]
-    pub worktree: bool,
-    #[serde(default, deserialize_with = "lenient_string")]
-    pub worktree_name: String,
     /// Output style applied for the session via `--settings '{"outputStyle":"…"}'`.
     #[serde(default, deserialize_with = "lenient_string")]
     pub output_style: String,

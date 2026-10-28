@@ -39,10 +39,6 @@ export function psQuoteIfNeeded(s: string): string {
 export function buildLaunchString(spec: LaunchSpec, claudeCmd = "claude"): string {
   const parts = [claudeCmd];
   if (spec.model.trim()) parts.push("--model", shellQuoteIfNeeded(spec.model.trim()));
-  if (spec.worktree) {
-    parts.push("--worktree");
-    if (spec.worktreeName.trim()) parts.push(shellQuoteIfNeeded(spec.worktreeName.trim()));
-  }
   if (spec.mode.trim()) parts.push("--permission-mode", spec.mode.trim());
   if (spec.effort.trim()) parts.push("--effort", spec.effort.trim());
   if (spec.outputStyle.trim()) {
@@ -77,10 +73,6 @@ export function psQuote(s: string): string {
 export function buildWinLaunchString(spec: LaunchSpec, claudeCmd = "claude"): string {
   const parts = [claudeCmd];
   if (spec.model.trim()) parts.push("--model", psQuoteIfNeeded(spec.model.trim()));
-  if (spec.worktree) {
-    parts.push("--worktree");
-    if (spec.worktreeName.trim()) parts.push(psQuoteIfNeeded(spec.worktreeName.trim()));
-  }
   if (spec.mode.trim()) parts.push("--permission-mode", spec.mode.trim());
   if (spec.effort.trim()) parts.push("--effort", spec.effort.trim());
   if (spec.outputStyle.trim()) {

@@ -24,7 +24,9 @@ Limit to state in the decision note: the only real user is the owner, so this me
 
 ## Step 2: Recommendation (criteria 2, 4)
 
-Proposed, for the owner to confirm or overturn:
+Decided by the owner on 2026-10-27 (worktree: drop; command: keep). Automatic worktrees (creating one on every launch) are out of scope for this item; the owner does not want them. Reaching an existing worktree is already covered by the working-directory field.
+
+Basis:
 
 - **Worktree: drop.** It is a thin pass-through of one CLI flag, the owner does not use it, and `claude --worktree` can still be typed by hand. Cost to keep: a Rust charset guard (`is_safe_worktree_name`) and its tests, two fields in three type definitions, a UI row, and preset serialization.
 - **Command: keep.** The two starter presets depend on it, the README lists it as a headline feature, and removing it also removes the `--`-separated quoting path that the shell-safety design relies on for `wd`. Zero use in the owner's own presets is weak evidence against a field whose value is mostly in presets other people write. Planned improvement to drive adoption: none beyond the existing starter presets; revisit if the repo gains outside users.
@@ -65,4 +67,4 @@ Done when: `command grep -rIi worktree` over `src`, `src-tauri/src`, `README.md`
 
 - Write the decision, evidence table and reasoning into `.ai/docs/decisions/2026-10-27-command-worktree-keep-or-drop.md`.
 - Share with the team: post the same summary on the GitHub issue for this item (the only team surface this solo project has), and note it in the release notes of the version that removes worktree.
-- No work starts on Step 3 until the owner confirms the recommendation in Step 2.
+- Step 3 was carried out on this branch after the owner's decision. One item remains: `docs/images/panel.png` still shows the worktree toggle and needs a new capture from the running app.

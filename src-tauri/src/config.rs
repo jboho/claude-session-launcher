@@ -212,6 +212,17 @@ mod tests {
     }
 
     #[test]
+    fn a_preset_saved_with_the_removed_worktree_fields_still_loads() {
+        let dir = tempdir();
+        let file = dir.join("presets.json");
+        std::fs::write(&file, r#"[{"id":"a","name":"Old","model":"opus","worktree":true,"worktreeName":"wip"}]"#).unwrap();
+        let loaded = load_presets(&file).unwrap();
+        assert_eq!(loaded.len(), 1);
+        assert_eq!(loaded[0].name, "Old");
+        assert_eq!(loaded[0].model, "opus");
+    }
+
+    #[test]
     fn a_presets_file_that_is_not_an_array_is_a_clear_error_not_a_silent_empty_list() {
         let dir = tempdir();
         let file = dir.join("presets.json");
