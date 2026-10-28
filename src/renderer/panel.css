@@ -46,6 +46,8 @@
     background:var(--panel-2); border:1px solid var(--border); border-radius:11px; padding:11px 12px; }
   .group { display:flex; align-items:center; gap:10px; }
   .group > .glabel { flex:0 0 48px; font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }
+  /* Style + Think share a line; Think wraps under Style if the width runs out. */
+  .pair { display:flex; flex-wrap:wrap; gap:8px 18px; }
   .row { display:flex; gap:5px; flex-wrap:wrap; }
   .sq {
     min-width:36px; height:31px; padding:0 7px; border:1.5px solid var(--border);
