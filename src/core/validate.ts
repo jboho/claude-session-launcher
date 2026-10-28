@@ -37,7 +37,7 @@ export function validatePreset(preset: Preset): ValidationResult {
 /**
  * A model value must stay within a shell-safe charset. Mirrors the launch dispatcher's
  * SAFE_MODEL but requires non-empty. Brackets are allowed for context-variant ids like
- * `claude-opus-4-8[1m]`; the launch-string builder quotes the token when it isn't bare-safe
+ * `claude-opus-5-5[1m]` (the suffix is optional); the launch-string builder quotes the token when it isn't bare-safe
  * (shellQuoteIfNeeded / psQuoteIfNeeded), so the brackets reach the shell literally. A leading
  * `-` is still rejected: an unquoted value starting with a dash would reach the CLI as a flag
  * rather than as `--model`'s value.
