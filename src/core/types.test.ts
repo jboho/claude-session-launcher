@@ -23,18 +23,33 @@ describe("types", () => {
 });
 
 describe("capabilitiesFor", () => {
+  const caps = (thinkingBudget: boolean) => ({ effort: true, blockedModes: [], thinkingBudget });
+
   test("haiku 4.5 now accepts effort and the autonomous modes", () => {
-    expect(capabilitiesFor("haiku")).toEqual({ effort: true, blockedModes: [], thinkingBudget: true });
-    expect(capabilitiesFor("claude-haiku-4-5-20251001")).toEqual({ effort: true, blockedModes: [], thinkingBudget: true });
+    expect(capabilitiesFor("claude-haiku-4-5-20251001")).toEqual(caps(true));
   });
-  test("fable ignores the thinking budget", () => {
-    expect(capabilitiesFor("fable")).toEqual({ effort: true, blockedModes: [], thinkingBudget: false });
-    expect(capabilitiesFor("claude-fable-5")).toEqual({ effort: true, blockedModes: [], thinkingBudget: false });
+  // Measured on Claude Code 2.1.312: MAX_THINKING_TOKENS=0 removes the thinking block on these ids.
+  test("older full model ids honor the thinking budget", () => {
+    for (const m of [
+      "claude-opus-4-8", "claude-opus-4-8[1m]", "claude-sonnet-4-6", "claude-sonnet-4-5-20250929",
+      "claude-opus-4-20250514", "claude-opus-5", "claude-sonnet-5", "claude-haiku-4-5-20251001",
+    ]) expect(capabilitiesFor(m).thinkingBudget, m).toBe(true);
   });
-  test("opus/sonnet/custom are unrestricted and honor the thinking budget", () => {
-    expect(capabilitiesFor("opus")).toEqual({ effort: true, blockedModes: [], thinkingBudget: true });
-    expect(capabilitiesFor("claude-sonnet-4-5-20250929")).toEqual({ effort: true, blockedModes: [], thinkingBudget: true });
-    expect(capabilitiesFor("some-future-model")).toEqual({ effort: true, blockedModes: [], thinkingBudget: true });
+  // Same probe: thinking stays on at MAX_THINKING_TOKENS=0 for the 5.5 generation and for Fable.
+  test("the 5.5 models and fable ignore the thinking budget", () => {
+    for (const m of [
+      "claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5", "claude-opus-5-5[1m]",
+      "claude-fable-5", "claude-fable-5-1", "fable",
+    ]) expect(capabilitiesFor(m).thinkingBudget, m).toBe(false);
+  });
+  test("aliases and the CLI default resolve to the 5.5 models, so the dial is inert", () => {
+    for (const m of ["opus", "sonnet", "haiku", "Opus", " opus ", ""]) {
+      expect(capabilitiesFor(m).thinkingBudget, JSON.stringify(m)).toBe(false);
+    }
+  });
+  test("an unrecognized model id does not claim the dial works", () => {
+    expect(capabilitiesFor("some-future-model")).toEqual(caps(false));
+    expect(capabilitiesFor("claude-opus-6")).toEqual(caps(false));
   });
 });
 
