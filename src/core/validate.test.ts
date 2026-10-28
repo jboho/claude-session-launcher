@@ -35,13 +35,6 @@ describe("validatePreset", () => {
     expect(validatePreset(preset({ name: "x", mode: "dontAsk" })).valid).toBe(true);
   });
 
-  test("a branch-like worktree name passes but a leading-dash one is rejected", () => {
-    expect(validatePreset(preset({ name: "x", worktreeName: "feat/foo-bar" })).valid).toBe(true);
-    const r = validatePreset(preset({ name: "x", worktreeName: "-rf" }));
-    expect(r.valid).toBe(false);
-    expect(r.errors.some((e) => e.includes("worktree"))).toBe(true);
-  });
-
   test("output style must stay within the JSON-safe charset", () => {
     expect(validatePreset(preset({ name: "x", outputStyle: "My Style-1" })).valid).toBe(true);
     expect(validatePreset(preset({ name: "x", outputStyle: 'a"}; rm -rf /' })).valid).toBe(false);

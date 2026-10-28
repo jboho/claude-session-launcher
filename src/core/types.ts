@@ -80,8 +80,6 @@ export interface LaunchSpec {
   effort: string;
   wd: string;
   cmd: string;
-  worktree: boolean; // --worktree
-  worktreeName: string; // optional name; "" = bare --worktree (CLI auto-names)
   outputStyle: string; // --settings '{"outputStyle":"…"}'; "" = omit
   thinkingBudget: string; // MAX_THINKING_TOKENS=<value>; "" = omit
 }
@@ -108,6 +106,6 @@ export const DEFAULT_SETTINGS: Settings = {
 export function emptyPreset(): Preset {
   return {
     id: "", name: "", model: "", mode: "", effort: "", wd: "", cmd: "",
-    worktree: false, worktreeName: "", outputStyle: "", thinkingBudget: "",
+    outputStyle: "", thinkingBudget: "",
   };
 }

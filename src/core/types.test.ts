@@ -11,7 +11,7 @@ describe("types", () => {
   test("emptyPreset returns an all-blank preset", () => {
     expect(emptyPreset()).toEqual({
       id: "", name: "", model: "", mode: "", effort: "", wd: "", cmd: "",
-      worktree: false, worktreeName: "", outputStyle: "", thinkingBudget: "",
+      outputStyle: "", thinkingBudget: "",
     });
   });
 
