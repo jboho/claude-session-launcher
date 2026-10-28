@@ -36,7 +36,7 @@ pub fn is_safe_dial(value: &str) -> bool {
             .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_'))
 }
 
-/// The model additionally allows the `[ ]` of context-variant ids like `claude-opus-4-8[1m]`.
+/// The model additionally allows the `[ ]` of ids with the optional suffix, like `claude-opus-5-5[1m]`.
 /// It is still forbidden from starting with `-`; the builder quotes it via
 /// `shell_quote_if_needed` so the brackets reach the shell literally rather than as a glob.
 /// Mirrors SAFE_MODEL in src/main/spawn/index.ts.

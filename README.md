@@ -52,7 +52,7 @@ The **settings** screen picks your terminal, edits the model list, and sets a de
 - **Inline command** — Optionally pass a prompt or slash command to run as soon as the session starts.
 - **Two ways to summon** — Global hotkey (default **Option+W**, configurable) or the menu-bar icon. The app has no Dock icon.
 - **Terminals** — iTerm, Apple Terminal and Ghostty. Only terminals installed on your machine are offered.
-- **Custom models** — Edit the model list in Settings; any model id is accepted, including `[1m]` context variants such as `claude-opus-4-8[1m]`.
+- **Custom models** — Edit the model list in Settings; any model id is accepted, including the optional `[1m]` suffix, for example `claude-opus-5-5[1m]` (current models all have a 1M window, so the suffix is no longer needed).
 - **Shell-safe by construction** — Mode and effort are charset-checked, and the working directory and command are quoted and separated with `--`, so a preset can't smuggle in extra arguments.
 - **Portable config** — Plain JSON under `~/.config/claude-launcher/`, easy to keep in your dotfiles.
 

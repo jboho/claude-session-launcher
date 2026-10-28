@@ -7,7 +7,7 @@ export function shellQuote(s: string): string {
 
 /**
  * A token safe to leave UNQUOTED in a command word. Excludes shell metacharacters —
- * notably the glob brackets in context-variant model ids like `claude-opus-4-8[1m]`,
+ * notably the glob brackets in model ids with the optional `[1m]` suffix, like `claude-opus-5-5[1m]`,
  * which zsh (with NOMATCH) would try to expand and abort on.
  */
 const BARE_TOKEN_RE = /^[A-Za-z0-9._-]+$/;
