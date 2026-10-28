@@ -1,6 +1,6 @@
 # Claude changes review, 2026-10-27
 
-Result: **no breaking changes found; two follow-ups needed (one medium, one low).** Launches work unchanged. Roadmap item: issue #22. Plan: `.ai/docs/plans/2026-10-27-claude-changes-review.md`.
+Result: **no breaking changes found; two follow-ups needed (one medium, one low), filed as #25 and #26.** Launches work unchanged. Roadmap item: issue #22. Plan: `.ai/docs/plans/2026-10-27-claude-changes-review.md`.
 
 Reviewed against Claude Code **2.1.312** (installed, also the newest entry in the changelog) on 2026-10-27.
 
@@ -26,8 +26,8 @@ Latest models (platform docs, models overview): Fable 5.1, Opus 5.5, Sonnet 5.5,
 
 | # | Item | Impact | Severity | Priority | Issue |
 |---|------|--------|----------|----------|-------|
-| 1 | Thinking-budget "Off" dial: docs say `MAX_THINKING_TOKENS=0` cannot turn thinking off on Opus 5.5, Sonnet 5.5, Haiku 5.5 or Fable; the launcher greys the dial only for Fable | Dial looks active but has no effect on all four default models | Medium | Next | Proposed, not filed |
-| 2 | Stale wording: "Haiku 4.5" in `types.ts:39`; `claude-opus-4-8[1m]` examples (README.md:56, launch-string.ts:10, validate.ts:44, launch.rs:39); `default` listed as a mode and `claude-fable-5` in `operational-knowledge.md:11`. Claude Code 2.1.312 no longer shows `[1m]` and the CLI's mode list has `manual`, not `default` | Wording only; the suffix is still accepted so the charset rule must stay | Low | Later | Proposed, not filed |
+| 1 | Thinking-budget "Off" dial: docs say `MAX_THINKING_TOKENS=0` cannot turn thinking off on Opus 5.5, Sonnet 5.5, Haiku 5.5 or Fable; the launcher greys the dial only for Fable | Dial looks active but has no effect on all four default models | Medium | Next | #25 |
+| 2 | Stale wording: "Haiku 4.5" in `types.ts:39`; `claude-opus-4-8[1m]` examples (README.md:56, launch-string.ts:10, validate.ts:44, launch.rs:39); `default` listed as a mode and `claude-fable-5` in `operational-knowledge.md:11`. Claude Code 2.1.312 no longer shows `[1m]` and the CLI's mode list has `manual`, not `default` | Wording only; the suffix is still accepted so the charset rule must stay | Low | Later | #26 |
 
 Watch items, no action: `CLAUDE_CODE_EFFORT_LEVEL`, if set in the user's shell, takes precedence over `--effort` (env-vars docs), so the effort dial would be ignored; `bypassPermissions` is still a CLI choice but stays removed from the UI by design; `claude ultrareview` and `claude remote-control --sandbox` changes (2.1.309, 2.1.300) do not touch the launcher.
 
@@ -45,4 +45,5 @@ Watch items, no action: `CLAUDE_CODE_EFFORT_LEVEL`, if set in the user's shell, 
 
 ## Issues
 
-`gh issue create` for items 1 and 2 was refused by the session's permission check (the task authorised one issue), so they are proposed, not filed. Suggested titles: "Thinking-budget dial does nothing on current Claude models" and "Refresh stale Claude model wording and examples".
+- #25 Thinking-budget dial does nothing on current Claude models (item 1)
+- #26 Refresh stale Claude model wording and examples (item 2)
