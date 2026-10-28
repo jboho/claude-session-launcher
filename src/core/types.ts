@@ -40,7 +40,7 @@ export interface ModelCapabilities {
 }
 
 /**
- * Capabilities for a model value. Haiku 4.5 now accepts `--effort` and the autonomous modes
+ * Capabilities for a model value. Haiku (`claude-haiku-5-5`) accepts `--effort` and the autonomous modes
  * (verified against the installed CLI), so no family restricts those any more; only the
  * thinking budget depends on the model (see `honorsThinkingBudget`).
  */
