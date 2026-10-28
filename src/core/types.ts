@@ -21,27 +21,31 @@ export const MODES: Option[] = [
 export const DEFAULT_MODE = "manual";
 
 /**
- * Fable 5 ignores MAX_THINKING_TOKENS — it drops `budget_tokens` and uses an explicit
- * `think` param instead — so the thinking-budget dial is inert for it and greys out.
+ * Whether MAX_THINKING_TOKENS=0 actually turns thinking off. Measured on Claude Code 2.1.312:
+ * it does for the 4.x models and for Opus 5 / Sonnet 5, and it does not for the 5.5 models or
+ * Fable, which keep thinking on. The aliases (and no `--model` at all) resolve to the 5.5 models,
+ * so only an explicit older full id passes; anything unrecognized counts as inert.
  */
-export function isFable(model: string): boolean {
-  const m = model.trim().toLowerCase();
-  return m === "fable" || m.startsWith("claude-fable");
+export function honorsThinkingBudget(model: string): boolean {
+  const m = /^claude-(?:opus|sonnet|haiku)-(\d+)(?:-(\d{1,2}))?(?=$|-|\[)/.exec(model.trim().toLowerCase());
+  if (!m) return false;
+  const major = Number(m[1]);
+  return major <= 4 || (major === 5 && m[2] === undefined);
 }
 
 export interface ModelCapabilities {
   effort: boolean; // model supports --effort
   blockedModes: string[]; // permission modes the model rejects
-  thinkingBudget: boolean; // model honors the MAX_THINKING_TOKENS dial
+  thinkingBudget: boolean; // MAX_THINKING_TOKENS=0 really turns thinking off for this model
 }
 
 /**
  * Capabilities for a model value. Haiku 4.5 now accepts `--effort` and the autonomous modes
- * (verified against the installed CLI), so no family restricts those any more; Fable ignores
- * the thinking budget.
+ * (verified against the installed CLI), so no family restricts those any more; only the
+ * thinking budget depends on the model (see `honorsThinkingBudget`).
  */
 export function capabilitiesFor(model: string): ModelCapabilities {
-  return { effort: true, blockedModes: [], thinkingBudget: !isFable(model) };
+  return { effort: true, blockedModes: [], thinkingBudget: honorsThinkingBudget(model) };
 }
 
 /** The model list to show: the user's configured list, or the built-in defaults when empty/invalid. */
@@ -67,7 +71,7 @@ export const OUTPUT_STYLES: Option[] = [
 
 /**
  * Thinking-budget dial (the coarse knob below `--effort low`). "0" turns thinking off via
- * MAX_THINKING_TOKENS; none selected (thinkingBudget "") = the model default.
+ * MAX_THINKING_TOKENS on the models that honor it; none selected (thinkingBudget "") = the model default.
  */
 export const THINKING_BUDGETS: Option[] = [
   { value: "0", label: "Off" },

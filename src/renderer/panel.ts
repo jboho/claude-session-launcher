@@ -59,13 +59,16 @@ const composed = (): LaunchSpec => ({
   cmd: composer.cmd,
 });
 
+const THINKING_INERT_HINT = "This model keeps thinking on; the budget setting has no effect.";
+
 /** The launchable LaunchSpec view of a saved preset (drops its id/name). */
 const launchSpecOf = (p: Preset): LaunchSpec => ({
   model: p.model,
   mode: p.mode,
   effort: p.effort,
   outputStyle: p.outputStyle,
-  thinkingBudget: p.thinkingBudget,
+  // A budget saved for a model that ignores it is dropped, as the composer does.
+  thinkingBudget: capabilitiesFor(p.model).thinkingBudget ? p.thinkingBudget : "",
   wd: p.wd,
   cmd: p.cmd,
 });
@@ -78,10 +81,11 @@ function disableTextAssist(input: HTMLInputElement): void {
   input.spellcheck = false;
 }
 
-function sqBtn(label: string, on: boolean, onclick: () => void, disabled = false): HTMLButtonElement {
+function sqBtn(label: string, on: boolean, onclick: () => void, disabled = false, title = ""): HTMLButtonElement {
   const b = document.createElement("button");
   b.className = "sq" + (on ? " on" : "") + (disabled ? " disabled" : "");
   b.textContent = label;
+  if (title) b.title = title;
   if (!disabled) b.onclick = onclick;
   return b;
 }
@@ -120,6 +124,7 @@ function renderDials(): void {
             renderPreview();
           },
           disabled,
+          disabled && key === "thinkingBudget" ? THINKING_INERT_HINT : "",
         ),
       );
     }
@@ -150,7 +155,7 @@ function presetEl(p: Preset, plain: boolean): HTMLElement {
   el.className = "preset" + (plain ? " plain" : "");
   const extras = [
     p.outputStyle ? p.outputStyle.toLowerCase() : "",
-    p.thinkingBudget === "0" ? "think:off" : "",
+    p.thinkingBudget === "0" && capabilitiesFor(p.model).thinkingBudget ? "think:off" : "",
   ].filter(Boolean);
   const meta = [p.model || "·", p.mode || "·", p.effort || "·", ...extras].join(" · ");
   const go = document.createElement("div");
