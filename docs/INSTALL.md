@@ -79,8 +79,9 @@ entitlements are needed — unlike the former Electron build, there is no bundle
 Releases are built by GitHub Actions (`.github/workflows/release.yml`) on a version tag:
 
 ```bash
-# bump the version in package.json AND src-tauri/tauri.conf.json first
-# (e.g. 1.0.0 -> 1.0.1), commit it, then:
+# bump the version in package.json, src-tauri/tauri.conf.json,
+# src-tauri/Cargo.toml and src-tauri/Cargo.lock (the claude-launcher entry) first
+# (e.g. 1.0.0 -> 1.0.1), merge it, then tag the merge commit:
 git tag vX.Y.Z
 git push origin vX.Y.Z
 ```

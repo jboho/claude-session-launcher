@@ -10,7 +10,7 @@ Cold reference — read when building for release, signing, notarizing, or cutti
 
 ## Release flow
 
-Bump `version` in **both** `package.json` and `src-tauri/tauri.conf.json` → commit → `git tag vX.Y.Z && git push origin vX.Y.Z` → CI publishes the unsigned DMG. For a signed + notarized artifact, build locally with `tauri:build:signed` and upload that DMG. (No release cut yet; version `0.1.0`.)
+Bump `version` in all four files — `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` and the `claude-launcher` entry in `src-tauri/Cargo.lock` — in a `chore: release vX.Y.Z` PR → merge it → `git tag vX.Y.Z <merge commit> && git push origin vX.Y.Z` → `release.yml` publishes the DMG, signed + notarized when the repo's signing secrets are set (v1.1.1 was). The workflow does not compare the tag to the files, so check all four match before tagging.
 
 ## Install
 
