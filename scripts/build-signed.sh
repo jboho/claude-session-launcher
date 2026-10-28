@@ -61,8 +61,13 @@ echo "==> building…"
 command pnpm tauri:build
 
 # --- locate artifacts ------------------------------------------------------
-APP="$(/usr/bin/find "${CARGO_TARGET_DIR:-$HOME/.cache/cargo-target}"/release/bundle/macos -maxdepth 1 -name '*.app' | head -n1)"
-DMG="$(/usr/bin/find "${CARGO_TARGET_DIR:-$HOME/.cache/cargo-target}"/release/bundle/dmg -maxdepth 1 -name '*.dmg' | head -n1)"
+# Ask cargo where it built: the target dir is src-tauri/target on CI but a shared dir
+# (~/.cargo/config.toml) on a dev machine, and cargo resolves both the same way for build and metadata.
+# The shared dir also holds other projects' bundles, so match this app's name.
+TARGET_DIR="$(cargo metadata --no-deps --format-version 1 --manifest-path src-tauri/Cargo.toml | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["target_directory"])')"
+if [[ -z "$TARGET_DIR" ]]; then echo "error: could not resolve cargo target dir" >&2; exit 1; fi
+APP="$(/usr/bin/find "$TARGET_DIR"/release/bundle/macos -maxdepth 1 -name 'Claude Launcher*.app' | head -n1)"
+DMG="$(/usr/bin/find "$TARGET_DIR"/release/bundle/dmg -maxdepth 1 -name 'Claude Launcher*.dmg' | head -n1)"
 if [[ -z "$APP" ]]; then echo "error: no .app produced" >&2; exit 1; fi
 
 # --- notarize the DMG container --------------------------------------------
