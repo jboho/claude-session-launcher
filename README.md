@@ -46,7 +46,7 @@ The **settings** screen picks your terminal, edits the model list, and sets a de
 
 ## Features
 
-- **Dials for every launch** — Model, Mode (Plan, Auto, Accept, Don't Ask), Effort (Low to Max), and output Style. Dials that a model doesn't support are greyed out.
+- **Dials for every launch** — Model, Mode (Plan, Auto, Accept, Don't Ask), Effort (Low to Max), and output Style.
 - **Live command preview** — The exact `claude ...` command is shown before you launch it and can be copied. The preview comes from the same Rust code that runs the launch, so it can't drift from what actually runs.
 - **Presets** — Save, edit and delete named combinations, including their working directory and command. Starter presets are seeded on first run.
 - **Inline command** — Optionally pass a prompt or slash command to run as soon as the session starts.
@@ -100,7 +100,7 @@ Rust tests run with `cargo test --manifest-path src-tauri/Cargo.toml`. Run `pnpm
 Set `CLAUDE_LAUNCHER_CONFIG=/path/to/presets.json` to move the config (its folder also holds `settings.json`), or use `XDG_CONFIG_HOME`. Settings keys of note:
 
 - `claudeBinary` — explicit path to `claude`. Leave blank to auto-detect.
-- `models` — your own list of `{ value, label }` entries. Leave empty for the built-in defaults. Custom values are unrestricted; known families (for example Haiku) still grey out the dials they don't support.
+- `models` — your own list of `{ value, label }` entries. Leave empty for the built-in defaults. Custom values are unrestricted.
 - `hotkey` — the global summon shortcut, set with the recorder in Settings. Defaults to `Alt+W` if unset or unavailable.
 
 ## Tech stack

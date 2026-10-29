@@ -41,7 +41,8 @@ let cancelRecording: (() => void) | null = null;
 
 let presets: Preset[] = [];
 let settings: Settings = { terminal: "iTerm", wd: "", cmd: "", claudeBinary: "", models: [], hotkey: "", forkSubagent: "" };
-const sel = { model: "opus", mode: "auto", effort: "high", outputStyle: "" };
+// thinkingBudget has no panel control; it is carried from a loaded preset so re-saving or launching it keeps the budget.
+const sel = { model: "opus", mode: "auto", effort: "high", outputStyle: "", thinkingBudget: "" };
 // Transient composer state (per-launch). wd seeds from the settings default; cmd
 // is entered inline before each launch (not persisted).
 const composer = { wd: "", cmd: "" };
@@ -53,7 +54,7 @@ const composed = (): LaunchSpec => ({
   mode: sel.mode || DEFAULT_MODE,
   effort: sel.effort,
   outputStyle: sel.outputStyle,
-  thinkingBudget: "",
+  thinkingBudget: sel.thinkingBudget,
   wd: composer.wd,
   cmd: composer.cmd,
 });
@@ -94,6 +95,7 @@ function renderDials(): void {
   const caps = capabilitiesFor(sel.model);
   if (!caps.effort) sel.effort = "";
   if (caps.blockedModes.includes(sel.mode)) sel.mode = "";
+  if (!caps.thinkingBudget) sel.thinkingBudget = "";
   const groups: [string, { value: string; label: string }[], keyof typeof sel][] = [
     ["g-model", currentModels(), "model"],
     ["g-mode", MODES, "mode"],
@@ -167,6 +169,7 @@ function presetEl(p: Preset, plain: boolean): HTMLElement {
       sel.mode = p.mode;
       sel.effort = p.effort;
       sel.outputStyle = p.outputStyle;
+      sel.thinkingBudget = p.thinkingBudget;
       composer.wd = p.wd;
       composer.cmd = p.cmd;
       ($("cmd") as HTMLInputElement).value = p.cmd;
