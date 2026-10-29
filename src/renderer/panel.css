@@ -117,7 +117,7 @@
       "Anthropic Serif Fallback DejaVu","Anthropic Serif Fallback Noto",Georgia,"Times New Roman",Times,serif; }
   .titlebar .mark { color:var(--accent); font-size:17px; }
 
-  /* Disabled dial (e.g. Effort when Haiku is selected) */
+  /* Disabled dial: a button the selected model can't use (capabilitiesFor currently disables none) */
   .sq.disabled { opacity:.32; cursor:not-allowed; }
   .sq.disabled:hover { border-color:var(--border); }
 
