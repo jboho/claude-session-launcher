@@ -22,7 +22,7 @@
 
 ## Overview
 
-**Claude Session Launcher** is a small [Tauri](https://tauri.app/) menu-bar widget that opens a `claude` CLI session in your terminal with **model**, **permission mode** and **effort** already chosen (plus output style, thinking, working directory and an initial command). Save the combinations you use as named presets and launch them in one click or one hotkey.
+**Claude Session Launcher** is a small [Tauri](https://tauri.app/) menu-bar widget that opens a `claude` CLI session in your terminal with **model**, **permission mode** and **effort** already chosen (plus output style, working directory and an initial command). Save the combinations you use as named presets and launch them in one click or one hotkey.
 
 It writes a shell command into your terminal. It does not embed or wrap the CLI, so every session is a normal `claude` session.
 
@@ -38,7 +38,7 @@ It writes a shell command into your terminal. It does not embed or wrap the CLI,
 
 | Launcher                                                                                                         | Settings                                                                                       |
 | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| ![Launcher panel with model, mode, effort, style and think dials, command field and presets](docs/images/panel.png) | ![Settings screen with terminal choice, model list, working directory, Claude binary and global hotkey](docs/images/settings.png) |
+| ![Launcher panel with model, mode, effort and style dials, command field and presets](docs/images/panel.png) | ![Settings screen with terminal choice, model list, working directory, Claude binary and global hotkey](docs/images/settings.png) |
 
 The **launcher** shows the dials, a live preview of the exact command it will run (with a copy button), and your presets underneath. Click a preset to launch it immediately, or use the pencil to load it back into the dials.
 
@@ -46,7 +46,7 @@ The **settings** screen picks your terminal, edits the model list, and sets a de
 
 ## Features
 
-- **Dials for every launch** — Model, Mode (Plan, Auto, Accept, Don't Ask), Effort (Low to Max), output Style and Think. Dials that a model doesn't support are greyed out.
+- **Dials for every launch** — Model, Mode (Plan, Auto, Accept, Don't Ask), Effort (Low to Max), and output Style. Dials that a model doesn't support are greyed out.
 - **Live command preview** — The exact `claude ...` command is shown before you launch it and can be copied. The preview comes from the same Rust code that runs the launch, so it can't drift from what actually runs.
 - **Presets** — Save, edit and delete named combinations, including their working directory and command. Starter presets are seeded on first run.
 - **Inline command** — Optionally pass a prompt or slash command to run as soon as the session starts.

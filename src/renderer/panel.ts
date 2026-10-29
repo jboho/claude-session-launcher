@@ -2,7 +2,6 @@ import {
   MODES,
   EFFORTS,
   OUTPUT_STYLES,
-  THINKING_BUDGETS,
   DEFAULT_MODE,
   capabilitiesFor,
   effectiveModels,
@@ -42,7 +41,7 @@ let cancelRecording: (() => void) | null = null;
 
 let presets: Preset[] = [];
 let settings: Settings = { terminal: "iTerm", wd: "", cmd: "", claudeBinary: "", models: [], hotkey: "", forkSubagent: "" };
-const sel = { model: "opus", mode: "auto", effort: "high", outputStyle: "", thinkingBudget: "" };
+const sel = { model: "opus", mode: "auto", effort: "high", outputStyle: "" };
 // Transient composer state (per-launch). wd seeds from the settings default; cmd
 // is entered inline before each launch (not persisted).
 const composer = { wd: "", cmd: "" };
@@ -54,12 +53,10 @@ const composed = (): LaunchSpec => ({
   mode: sel.mode || DEFAULT_MODE,
   effort: sel.effort,
   outputStyle: sel.outputStyle,
-  thinkingBudget: sel.thinkingBudget,
+  thinkingBudget: "",
   wd: composer.wd,
   cmd: composer.cmd,
 });
-
-const THINKING_INERT_HINT = "This model keeps thinking on; the budget setting has no effect.";
 
 /** The launchable LaunchSpec view of a saved preset (drops its id/name). */
 const launchSpecOf = (p: Preset): LaunchSpec => ({
@@ -81,11 +78,10 @@ function disableTextAssist(input: HTMLInputElement): void {
   input.spellcheck = false;
 }
 
-function sqBtn(label: string, on: boolean, onclick: () => void, disabled = false, title = ""): HTMLButtonElement {
+function sqBtn(label: string, on: boolean, onclick: () => void, disabled = false): HTMLButtonElement {
   const b = document.createElement("button");
   b.className = "sq" + (on ? " on" : "") + (disabled ? " disabled" : "");
   b.textContent = label;
-  if (title) b.title = title;
   if (!disabled) b.onclick = onclick;
   return b;
 }
@@ -98,13 +94,11 @@ function renderDials(): void {
   const caps = capabilitiesFor(sel.model);
   if (!caps.effort) sel.effort = "";
   if (caps.blockedModes.includes(sel.mode)) sel.mode = "";
-  if (!caps.thinkingBudget) sel.thinkingBudget = "";
   const groups: [string, { value: string; label: string }[], keyof typeof sel][] = [
     ["g-model", currentModels(), "model"],
     ["g-mode", MODES, "mode"],
     ["g-effort", EFFORTS, "effort"],
     ["g-style", OUTPUT_STYLES, "outputStyle"],
-    ["g-thinking", THINKING_BUDGETS, "thinkingBudget"],
   ];
   for (const [elId, options, key] of groups) {
     const host = $(elId);
@@ -112,8 +106,7 @@ function renderDials(): void {
     for (const o of options) {
       const disabled =
         (key === "effort" && !caps.effort) ||
-        (key === "mode" && caps.blockedModes.includes(o.value)) ||
-        (key === "thinkingBudget" && !caps.thinkingBudget);
+        (key === "mode" && caps.blockedModes.includes(o.value));
       host.appendChild(
         sqBtn(
           o.label,
@@ -124,7 +117,6 @@ function renderDials(): void {
             renderPreview();
           },
           disabled,
-          disabled && key === "thinkingBudget" ? THINKING_INERT_HINT : "",
         ),
       );
     }
@@ -175,7 +167,6 @@ function presetEl(p: Preset, plain: boolean): HTMLElement {
       sel.mode = p.mode;
       sel.effort = p.effort;
       sel.outputStyle = p.outputStyle;
-      sel.thinkingBudget = p.thinkingBudget;
       composer.wd = p.wd;
       composer.cmd = p.cmd;
       ($("cmd") as HTMLInputElement).value = p.cmd;
